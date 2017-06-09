@@ -1,0 +1,4 @@
+11 16 16 1 16 16 1 1.0 100 0.0 912.5 1   /itype=11,im,jm,km,ip,jp,kp,conc,nptime,tbeg,tend,numbnd
+5 16 16 1 1 912.5 3650.0  2   /itype=5,i,j,kbot,ktop,tbeg,tend,numbnd
+
+
