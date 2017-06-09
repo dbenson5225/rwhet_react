@@ -271,7 +271,8 @@ do
     print*,' illegal name'
     cycle
   else
-    open(ioutp,file=fnameoutp,status='unknown',form='binary')
+!~     open(ioutp,file=fnameoutp,status='unknown',form='binary')
+    open(ioutp,file=fnameoutp,status='unknown',form='unformatted',access='stream')
     exit
   endif
 enddo
@@ -1459,7 +1460,8 @@ else
      endif
    else
 ! BINARY
-     open(inbgr,file=bgrfl,form='binary')
+!~      open(inbgr,file=bgrfl,form='binary')
+     open(inbgr,file=bgrfl,form='unformatted',access='stream')
      write(iout,*)' Trying to read bgr file as binary'
      write(*,*)' Trying to read bgr file as binary'
      if(iread.eq.3)then
@@ -4643,7 +4645,8 @@ save ntrans,iflag
 if(iflag.eq.1)then
   text='CONCENTRATION'
   FLNAME=FLNAME(1:index(FLNAME,'.')-1)//'_001.ucn'
-  open(iunit,file=flname,form='binary')
+!~   open(iunit,file=flname,form='binary')
+  open(iunit,file=flname,form='unformatted',access='stream')
   iflag=0
 endif
 ntrans=ntrans+1
