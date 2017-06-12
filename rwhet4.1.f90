@@ -1621,7 +1621,6 @@ do
         elseif(iconstant.eq.1.or.iconstant.eq.-1)then
           backspace(inpar)
           read(inpar,*,iostat=iread_error)iconstant,zonefl
-          write (*,*) '1628, iread_error = ', iread_error
           inquire (file=zonefl, exist=flexist)
           if(.not.flexist)then
             write(*,*)' ZONE file:',zonefl
@@ -1659,9 +1658,7 @@ do
       else
         do iz=1,nzone
           read(inpar,*,iostat=iread_error)izone,val
-          write (*,*) '1666, iread_error = ', iread_error
-          if(iread_error.ne.0)goto 9998
-          write (*,*) 'line 1668'                
+          if(iread_error.ne.0)goto 9998      
           if(izone.ne.iz)goto 9998
           if(ipar.eq.1)por(izone)=val
           if(ipar.eq.2)ret(izone)=val
@@ -1678,9 +1675,7 @@ do
       cycle
     endif
   enddo
-  write (*,*) 'in loop 1678'
 enddo
-write (*,*) 'out loop 1679'
 close (inpar)
 !.did we get all  of the parameters needed?
 do ipar=1,npar
