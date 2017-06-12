@@ -272,7 +272,8 @@ do
     cycle
   else
 !~     open(ioutp,file=fnameoutp,status='unknown',form='binary')
-    open(ioutp,file=fnameoutp,status='unknown',form='unformatted',access='stream')
+    ! open(ioutp,file=fnameoutp,status='unknown',form='unformatted',access='stream')
+    open(ioutp,file=fnameoutp,status='unknown',form='unformatted')
     exit
   endif
 enddo
@@ -1460,8 +1461,9 @@ else
      endif
    else
 ! BINARY
-!~      open(inbgr,file=bgrfl,form='binary')
+     ! open(inbgr,file=bgrfl,form='unformatted')
      open(inbgr,file=bgrfl,form='unformatted',access='stream')
+     ! open(inbgr,file=bgrfl,form='unformatted')
      write(iout,*)' Trying to read bgr file as binary'
      write(*,*)' Trying to read bgr file as binary'
      if(iread.eq.3)then
@@ -1595,7 +1597,7 @@ do
   call skip(inpar)
   read(inpar,'(a)',iostat=iread_error)param
   if(iread_error.eq.-1)exit
-  if(iread_error.eq.-2)goto 9998                
+  if(iread_error.eq.-2)goto 9998
   do ipar=1,npar
     temp=parami(ipar)
     if(param(1:4).eq.temp(1:4))then
@@ -1619,6 +1621,7 @@ do
         elseif(iconstant.eq.1.or.iconstant.eq.-1)then
           backspace(inpar)
           read(inpar,*,iostat=iread_error)iconstant,zonefl
+          write (*,*) '1628, iread_error = ', iread_error
           inquire (file=zonefl, exist=flexist)
           if(.not.flexist)then
             write(*,*)' ZONE file:',zonefl
@@ -1656,7 +1659,9 @@ do
       else
         do iz=1,nzone
           read(inpar,*,iostat=iread_error)izone,val
-          if(iread_error.ne.0)goto 9998                
+          write (*,*) '1666, iread_error = ', iread_error
+          if(iread_error.ne.0)goto 9998
+          write (*,*) 'line 1668'                
           if(izone.ne.iz)goto 9998
           if(ipar.eq.1)por(izone)=val
           if(ipar.eq.2)ret(izone)=val
@@ -1673,7 +1678,9 @@ do
       cycle
     endif
   enddo
+  write (*,*) 'in loop 1678'
 enddo
+write (*,*) 'out loop 1679'
 close (inpar)
 !.did we get all  of the parameters needed?
 do ipar=1,npar
@@ -1721,6 +1728,8 @@ endif
 !write(*,*)' RETARDATION IS NOT ACTIVE IN THIS VERSION'
 !write(IOUT,*)' RETARDATION IS NOT ACTIVE IN THIS VERSION'
 if(nzone.ne.1.and.inobgr.eq.0)deallocate (izone1)
+! write (*,*) 'nzone = ', nzone
+! write (*,*) 'inobgr = ', inobgr
 return
 9998 stop ' Error in parmater input file!'
 9999 stop ' Error in BGR file specfying zones!'

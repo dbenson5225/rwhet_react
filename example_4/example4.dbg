@@ -1,57 +1,30 @@
-  READING MAIN INPUT!                                                           
-  
-  ALLOCATING MEMORY FOR VELOCITY ARRAY!                                         
-  
-  ALLOCATING MEMORY FOR RECHARGE ARRAY!                                         
-  
-  ALLOCATING MEMORY FOR CHD ARRAY!                                              
-  
-  ALLOCATING MEMORY FOR PAT ARRAY!                                              
-  
-  ALLOCATING MEMORY FOR CAT ARRAY!                                              
-  
-  INITIALIZING VARIABLES!                                                       
-  
-  OPENING OUTPUT CONTROL FILE!                                                  
-  
-  ALLOCATING MEMORY FOR OPC ARRAY!                                              
-  
-  ALLOCATING MEMORY FOR OUTUNIT ARRAY!                                          
-  
-  ALLOCATING MEMORY FOR OUTFNAME ARRAY!                                         
-  
-  OPENING PARAMETER FILE!                                                       
-  
-  ALLOCATING MEMORY FOR PARAMETER ARRAYS!                                       
-  
-  READING PARAMETERS!                                                           
-  
-  OPENING BOUNDARY FILE!                                                        
-  
-  COMPUTING NUMBER OF SOURCES AND BOUNDARIES!                                   
-  
-  ALLOCATING MEMORY FOR BOUNDS ARRAY!                                           
-  
-  ALLOCATING MEMORY FOR SOURCE ARRAY!                                           
-  
-  READING BOUNDARY CONDITIONS!                                                  
-  
-  OPENING POINT SOURCE FILE!                                                    
-  
-  READING POINT SOURCE INPUT!                                                   
-  
-  OPENING VLC FILE!                                                             
-  
-  READING MONITORING LOCATIONS!                                                 
-  
-  READY TO CRANK OUT SOLUTION!                                                  
-  
-  INITIALIZING SYSTEM!                                                          
-  
-  OPCUPDT!                                                                      
-  
-  VELUPDT!                                                                      
-  
+  READING MAIN INPUT!                                                            
+  ALLOCATING MEMORY FOR VELOCITY ARRAY!                                          
+  ALLOCATING MEMORY FOR RECHARGE ARRAY!                                          
+  ALLOCATING MEMORY FOR CHD ARRAY!                                               
+  ALLOCATING MEMORY FOR PAT ARRAY!                                               
+  ALLOCATING MEMORY FOR CAT ARRAY!                                               
+  INITIALIZING VARIABLES!                                                        
+  OPENING OUTPUT CONTROL FILE!                                                   
+  ALLOCATING MEMORY FOR OPC ARRAY!                                               
+  ALLOCATING MEMORY FOR OUTUNIT ARRAY!                                           
+  ALLOCATING MEMORY FOR OUTFNAME ARRAY!                                          
+  OPENING PARAMETER FILE!                                                        
+  ALLOCATING MEMORY FOR PARAMETER ARRAYS!                                        
+  READING PARAMETERS!                                                            
+  OPENING BOUNDARY FILE!                                                         
+  COMPUTING NUMBER OF SOURCES AND BOUNDARIES!                                    
+  ALLOCATING MEMORY FOR BOUNDS ARRAY!                                            
+  ALLOCATING MEMORY FOR SOURCE ARRAY!                                            
+  READING BOUNDARY CONDITIONS!                                                   
+  OPENING POINT SOURCE FILE!                                                     
+  READING POINT SOURCE INPUT!                                                    
+  OPENING VLC FILE!                                                              
+  READING MONITORING LOCATIONS!                                                  
+  READY TO CRANK OUT SOLUTION!                                                   
+  INITIALIZING SYSTEM!                                                           
+  OPCUPDT!                                                                       
+  VELUPDT!                                                                       
               Divergence of the Flux
          i          j          k         div
 ----------------------------------------------------------------------------
@@ -61,268 +34,137 @@
                                   ----------- ----------- -----------
  Maximum normalized divergence =  0.40000E+01 0.40000E+01 0.55282E+02
 ----------------------------------------------------------------------------
-  MAWUPDT!                                                                      
-  
-  TCNTRL!                                                                       
-  
-  BNDUPDT!                                                                      
-  
-  SRCUPDT!                                                                      
-  
-  OUTPUT!                                                                       
-  
-  Using MOVEP2 - isotropic, no interpolation                                    
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL VELUPDT!                                                                 
-  
+  MAWUPDT!                                                                       
+  TCNTRL!                                                                        
+  BNDUPDT!                                                                       
+  SRCUPDT!                                                                       
+  OUTPUT!                                                                        
+  Using MOVEP2 - isotropic, no interpolation                                     
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL VELUPDT!                                                                  
               Divergence of the Flux
          i          j          k         div
 ----------------------------------------------------------------------------
@@ -332,767 +174,234 @@
                                   ----------- ----------- -----------
  Maximum normalized divergence =  0.40000E+01 0.40000E+01 0.55233E+02
 ----------------------------------------------------------------------------
-  CALL TCNTRL!                                                                  
-  
-  CALL BNDUPT!                                                                  
-  
-  CALL COURANT!                                                                 
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MAWUPDT!                                                                 
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL OUTPUT!                                                                  
-  
-  CALL MOVEP!                                                                   
-  
-  CALL SRC!                                                                     
-  
-  CALL REMOVEP!                                                                 
-  
-  CALL SPLIT!                                                                   
-  
-  CALL BNDUPT!                                                                  
-  
-  CALL OUTPUT!                                                                  
-  
-  DEALLOCATE MEMORY!                                                            
-  
+  CALL TCNTRL!                                                                   
+  CALL BNDUPT!                                                                   
+  CALL COURANT!                                                                  
+  CALL OUTPUT!                                                                   
+  CALL MAWUPDT!                                                                  
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  CALL MOVEP!                                                                    
+  CALL SRC!                                                                      
+  CALL REMOVEP!                                                                  
+  CALL SPLIT!                                                                    
+  CALL OUTPUT!                                                                   
+  DEALLOCATE MEMORY!                                                             
