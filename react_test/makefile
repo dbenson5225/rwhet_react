@@ -4,12 +4,17 @@ FLAGS = -03
 
 react_files = reaction_test.f90 react.f90 kdtree2.f90
 
-all: react_exe
+all: react_exe ompreact_exe
 
 react_exe: $(react_files)
 	$(FC90) kdtree2.f90 -c
 	$(FC90) react.f90 -c
 	$(FC90) $(react_files) -o $@
+
+ompreact_exe: $(react_files)
+	$(FC90) kdtree2.f90 -c -fopenmp
+	$(FC90) react.f90 -c -fopenmp
+	$(FC90) $(react_files) -fopenmp -o $@
 
 clean: 
 	rm react_exe *.mod x.txt closeguys.txt *.o *.out

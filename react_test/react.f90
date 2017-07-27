@@ -12,6 +12,9 @@ end type
 type result_array
     type(kdtree2_result), allocatable :: results(:)
 end type
+type treetree
+    type(kdtree2), pointer :: tree
+end type
 
 double precision, parameter :: pi = 4.0d0 * atan(1.0d0)
 
@@ -24,7 +27,7 @@ subroutine find_neighbs(tree, target, cortime, rad2, nalloc, indices, dists)
     integer, allocatable,          intent(  out) :: indices(:)
     double precision, allocatable, intent(  out) :: dists(:)
     
-    type(kdtree2_result)           :: results(nalloc)
+    type(kdtree2_result), target   :: results(nalloc)
     integer                        :: nfound
 
     ! allocate (results(nalloc))
@@ -34,8 +37,8 @@ subroutine find_neighbs(tree, target, cortime, rad2, nalloc, indices, dists)
 
     allocate (indices(nfound), dists(nfound))
 
-    indices = results(1:nfound)%idx
-    dists = results(1:nfound)%dis
+    indices = results(1 : nfound)%idx
+    dists = results(1 : nfound)%dis
 end subroutine find_neighbs
 
 subroutine maketree(tree2,data,d,n)
