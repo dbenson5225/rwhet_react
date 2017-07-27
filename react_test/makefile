@@ -17,4 +17,4 @@ ompreact_exe: $(react_files)
 	$(FC90) $(react_files) -fopenmp -o $@
 
 clean: 
-	rm react_exe *.mod x.txt closeguys.txt *.o *.out
+	rm react_exe ompreact_exe *.mod x.txt closeguys.txt *.o *.out
