@@ -3,14 +3,9 @@ module react
     use kdtree2_module
     implicit none
 
-type index_array
-    integer, allocatable :: indices(:)
-end type
-type dist_array
-    double precision, allocatable :: dists(:)
-end type
-type result_array
-    type(kdtree2_result), allocatable :: results(:)
+type search_results
+    integer, allocatable          :: indices(:)
+    double precision, allocatable :: dists(:) 
 end type
 
 double precision, parameter :: pi = 4.0d0 * atan(1.0d0)
@@ -38,19 +33,17 @@ subroutine find_neighbs(tree, target, cortime, rad2, nalloc, indices, dists)
     dists = results(1:nfound)%dis
 end subroutine find_neighbs
 
-subroutine maketree(tree2,data,d,n)
-    integer :: n, d
-    !   real(kdkind), dimension(:,:), allocatable :: data
-    real(kdkind) data(d,n)
-    type(kdtree2), pointer     :: tree2
+subroutine maketree(tree2, data, d, n)
+    integer                :: n, d
+    real(kdkind)           :: data(d, n)
+    type(kdtree2), pointer :: tree2
 
-    !    allocate(data(d,n))
-    tree2 => kdtree2_create(data,sort=.false.,rearrange=.false.)  ! this is how you create a tree. 
+    tree2 => kdtree2_create(data, sort=.false., rearrange=.false.)  ! this is how you create a tree. 
 end subroutine maketree
 
 ! subroutine to initialize the random number generator seed from clock time
 subroutine init_random_seed()
-    integer :: i, n, clock
+    integer                            :: i, n, clock
     integer, dimension(:), allocatable :: seed
 
     call random_seed(size = n)
@@ -60,6 +53,5 @@ subroutine init_random_seed()
     call random_seed(put = seed)
     deallocate(seed)
 end subroutine init_random_seed
-
 
 end module react
