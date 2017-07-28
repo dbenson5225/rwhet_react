@@ -35,6 +35,8 @@ call cpu_time(finish)
 
 id = RM_Create(10, 1)
 
+print *, 'id = ', id
+
 write (*,*) 'tree build time = ', finish_tree - start
 write (*,*) 'total time = ', finish - start
 
