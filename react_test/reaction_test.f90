@@ -1,5 +1,6 @@
 program reaction_test
     use react
+    use PhreeqcRM
     implicit none
 
 integer, parameter                 :: n = 1e5, d = 3, corr = n/2
@@ -9,7 +10,7 @@ real(kdkind), allocatable          :: x(:, :)
 type (search_results), allocatable :: closeguys(:)
 type(kdtree2), pointer             :: tree
 integer                            :: correltime = 1 ! not quite sure what this does 
-integer                            :: i
+integer                            :: i, id
 double precision                   :: start, finish_tree, finish
 
 allocate (closeguys(n))
@@ -31,6 +32,8 @@ end do
 ! end do
 
 call cpu_time(finish)
+
+id = RM_Create(10, 1)
 
 write (*,*) 'tree build time = ', finish_tree - start
 write (*,*) 'total time = ', finish - start
