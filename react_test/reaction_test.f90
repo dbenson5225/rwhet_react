@@ -134,9 +134,8 @@ do i = 1, ncomp
 enddo
 
 allocate(bc_conc(1, ncomp))
-bc1 = 0
+bc1 = 0 ! corresponds to solution zero in input file--must be 2D array
 status = RM_InitialPhreeqc2Concentrations(id, bc_conc, 1, bc1)
-! argument 'bc1' (0, above) corresponds to solution zero in input file
 
 allocate(comp_conc(n, ncomp), spec_conc(n, nspec))
 ! not sure if this initial get is necessary
