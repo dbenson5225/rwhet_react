@@ -3,7 +3,7 @@ program reaction_test
     use PhreeqcRM
     implicit none
 
-integer, parameter                 :: n = 1e5, d = 3, corr = n/2, nthreads = 1
+integer, parameter                 :: n = 1e1, d = 3, corr = n/2, nthreads = 1
 real(kdkind), parameter            :: r2 = 0.01**2
 integer, parameter                 :: cgsize = ceiling(n*((4.0d0/3.0d0)*pi*r2))
 real(kdkind), allocatable          :: x(:, :)
@@ -17,11 +17,14 @@ double precision                   :: calcite_in, Na_in, mg_in, ca_in, Cl_in, co
 double precision, dimension(n)     :: den_0, prs_0, tmp_0, sat_0, por_0, vol_0
 integer, dimension(n)              :: mask
 double precision                   :: cur_time, dt
-integer                            :: ncomp, nspec, nchem
+integer                            :: ncomp, nspec, nchem, so_col, so_row
 integer                            :: ic1(n, 7)
 type(species_list), allocatable    :: spec_list(:)
 type(component_list), allocatable  :: comp_list(:)
+type(selectout_list), allocatable  :: head_list(:)
 character(25)                      :: tempname
+double precision, allocatable      :: bc_conc(:, :), comp_conc(:, :), spec_conc(:, :), sout(:, :)
+integer                            :: bc1(1) ! this is for one boundary condition
 
 cur_time = 0
 dt = 0.1
@@ -124,11 +127,38 @@ enddo
 allocate(comp_list(ncomp))
 print *, 'ncomp = ', ncomp
 do i = 1, ncomp
-    status = RM_GetSpeciesName(id, i, tempname)
+    status = RM_GetComponent(id, i, tempname)
     allocate(character(len_trim(tempname)) :: comp_list(i)%comp)
     comp_list(i)%comp = trim(tempname)
     print *, comp_list(i)%comp
 enddo
+
+allocate(bc_conc(1, ncomp))
+bc1 = 0
+status = RM_InitialPhreeqc2Concentrations(id, bc_conc, 1, bc1)
+! argument 'bc1' (0, above) corresponds to solution zero in input file
+
+allocate(comp_conc(n, ncomp), spec_conc(n, nspec))
+! not sure if this initial get is necessary
+status = RM_GetConcentrations(id, comp_conc)
+status = RM_GetSpeciesConcentrations(id, spec_conc)
+
+status = RM_RunCells(id)
+status = RM_GetConcentrations(id, comp_conc)
+so_col = RM_GetSelectedOutputcolumncount(id)
+so_row = RM_GetSelectedOutputrowcount(id)
+allocate(sout(so_row, so_col))
+status = RM_GetSelectedOutput(id, sout)
+
+allocate(head_list(so_col))
+do i = 1, so_col
+    status = RM_GetSelectedOutputheading(id, i, tempname)
+    allocate(character(len_trim(tempname)) :: head_list(i)%head)
+    head_list(i)%head = trim(tempname)
+    print *, head_list(i)%head
+enddo
+
+status = RM_Destroy(id)
 
 print *, 'status = ', status
 

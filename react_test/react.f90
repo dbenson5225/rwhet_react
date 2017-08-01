@@ -13,6 +13,9 @@ module react
     type component_list
         character(:), allocatable :: comp
     end type
+    type selectout_list
+        character(:), allocatable :: head
+    end type
 
     double precision, parameter :: pi = 4.0d0 * atan(1.0d0)
 
