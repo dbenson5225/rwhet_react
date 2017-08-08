@@ -4,7 +4,7 @@ program dolo_ADRE
     implicit none
 
 ! ======== Parameters ========
-integer, parameter                 :: nthreads = 1 ! number of openmp threads for reaction module
+integer, parameter                 :: nthreads = 4 ! number of openmp threads for reaction module
 double precision, parameter        :: maxtime = 60e3 ! 1000 MIN
 ! integer, parameter                 :: maxtime = 15e3 ! 250 MIN
 ! double precision, parameter        :: dx = 1e-3
@@ -41,7 +41,7 @@ integer                            :: i, j, m, id, status, save_on, ngrd
 integer                            :: ncomp, nchem, so_col
 integer                            :: ic1(ncell, 7)
 type(component_list), allocatable  :: comp_list(:)
-type(selectout_list), allocatable  :: head_list(:)
+! type(selectout_list), allocatable  :: head_list(:)
 integer, dimension(ncell)          :: mask
 character(25)                      :: tempname
 double precision, allocatable      :: bc_conc(:, :), comp_conc(:, :),&
@@ -181,11 +181,10 @@ allocate(concs(ntrans, ncomp - 1), plot_concs(ntrans, ncomp + 2, save_steps),&
     ! *****probably will want to only save certain species later, but for now,
         ! let's keep them all
 concs(1, :) = bc_conc(1, 2 : ncomp)
-concs(2 : ntrans, 1 : 9) = comp_conc(:, 2 : ncomp)
-concs(2 : ntrans, 10 : 12) = sout
-plot_concs(:, :, 1) = concs
+concs(2 : ntrans, :) = comp_conc(:, 2 : ncomp)
+plot_concs(:, 1 : 9, 1) = concs
+plot_concs(:, 10 : 12, 1) = sout
 plot_times = (/((i - 1) * save_dt, i = 1, save_steps)/)
-print *, '188'
 
 j = 2
 ! time stepping
@@ -193,29 +192,21 @@ do m = 1, nsteps
     call advect(concs(:, 1 : 9), v, dx, dt, ntrans)
     call diffuse(concs(:, 1 : 9), D, dx, dt, ntrans)
 
-    if (cur_time >= plot_times(j)) then
-        plot_concs(:, :, j) = concs
-        j = j + 1
-    endif
-
     cur_time = cur_time + dt
     status = RM_SetTime(id, cur_time)
-    print *, '203'
 
     comp_conc(:, 2 : ncomp) = concs(2 : ntrans, 1 : 9)
-    print *, '206'
     status = RM_SetConcentrations(id, comp_conc)
-    print *, '208'
     status = RM_RunCells(id)
-    print *, '210'
     status = RM_GetConcentrations(id, comp_conc)
-    print *, '212'
-    concs(2 : ntrans, 1 : 9) = comp_conc(:, 2 : ncomp)
-    print *, '214'
+    concs(2 : ntrans, :) = comp_conc(:, 2 : ncomp)
     status = RM_GetSelectedOutput(id, sout)
-    print *, '216'
-    concs(2 : ntrans, 10 : 12) = sout
-    print *, '218'
+
+    if (cur_time >= plot_times(j)) then
+        plot_concs(:, 1 : 9, j) = concs
+        plot_concs(:, 10 : 12, j) = sout
+        j = j + 1
+    endif
 
 enddo
 
