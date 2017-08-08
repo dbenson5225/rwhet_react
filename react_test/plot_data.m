@@ -13,7 +13,7 @@ for i = 1 : shape_concs(3)
 
     figure(1)
 
-    plot(x, concs(:, 11, i))
+    plot(x, concs(:, 2, i))
 %     title(['t=',num2str(i),'*dt'])
 %     set(gca,'ylim',[0,0.36867]);
 

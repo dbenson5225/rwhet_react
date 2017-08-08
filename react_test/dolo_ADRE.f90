@@ -6,8 +6,9 @@ program dolo_ADRE
 ! ======== Parameters ========
 integer, parameter                 :: nthreads = 4 ! number of openmp threads for reaction module
 ! double precision, parameter        :: maxtime = 60e3 ! 1000 MIN
-integer, parameter                 :: maxtime = 1e3 ! 250 MIN
-double precision, parameter        :: dx = 1e-3
+! integer, parameter                 :: maxtime = 15e3 ! 250 MIN
+integer, parameter                 :: maxtime = 15e3 ! less, for testing
+double precision, parameter        :: dx = 1e-2
 ! double precision, parameter        :: dx = 1e-1 ! ****for faster testing
 integer, parameter                 :: ncell = nint(1.0d0/dx) - 1
     ! this could go wrong if dx is a weird number
@@ -47,7 +48,7 @@ integer, dimension(ncell)          :: mask
 character(25)                      :: tempname
 double precision, allocatable      :: bc_conc(:, :), comp_conc(:, :),&
                                       sout(:, :), concs(:, :),&
-                                      plot_concs(: , :, :), plot_times(:)
+                                      plot_concs(: , :), plot_times(:)
 integer                            :: bc1(1) ! this is for one boundary condition
 
 double precision :: testmat(2, 2, 2)
@@ -151,14 +152,14 @@ status = RM_InitialPhreeqc2Module(id, ic1)
 !            >>>>> End of initial condition <<<<<
 ! =======================================================================
 
-allocate(comp_list(ncomp))
-! print *, 'ncomp = ', ncomp
-do i = 1, ncomp
-    status = RM_GetComponent(id, i, tempname)
-    allocate(character(len_trim(tempname)) :: comp_list(i)%comp)
-    comp_list(i)%comp = trim(tempname)
-    ! print *, comp_list(i)%comp
-enddo
+! allocate(comp_list(ncomp))
+! ! print *, 'ncomp = ', ncomp
+! do i = 1, ncomp
+!     status = RM_GetComponent(id, i, tempname)
+!     allocate(character(len_trim(tempname)) :: comp_list(i)%comp)
+!     comp_list(i)%comp = trim(tempname)
+!     ! print *, comp_list(i)%comp
+! enddo
 
 status = RM_RunCells(id)
 
@@ -170,26 +171,29 @@ status = RM_InitialPhreeqc2Concentrations(id, bc_conc, 1, bc1)
 so_col = RM_GetSelectedOutputcolumncount(id)
 allocate(sout(ncell, so_col))
 status = RM_GetSelectedOutput(id, sout)
+! **** standard output ****
+! (1) pH, (2) calcite, (3) change calcite, (4) dolomite, (5), change dolomite
 
 ! dimension is ncell x ncomp - 1 because we will not be doing transport
     ! calculations for H2O
 ! For this specific case:
 ! (1) H, (2) O, (3) charge, (4) C, (5) Ca, (6) Cl, (7) Mg, (8) Na, (9) Si
 ! **** plot_concs ****
-! (10) pH, (11) calcite, (12) dolomite
-allocate(concs(ntrans, ncomp - 1), plot_concs(ntrans, ncomp + 2, save_steps),&
-         plot_times(save_steps))
+! (1) pH, (2) calcite, (3) dolomite
+allocate(concs(ntrans, ncomp - 1), plot_concs(ntrans, 3), plot_times(save_steps))
     ! *****probably will want to only save certain species later, but for now,
         ! let's keep them all
 concs(1, :) = bc_conc(1, 2 : ncomp)
 concs(2 : ntrans, :) = comp_conc(:, 2 : ncomp)
-plot_concs(:, 1 : 9, 1) = concs
-plot_concs(1, 10 : 12, 1) = 0
-plot_concs(2 : ntrans, 10 : 12, 1) = sout
+plot_concs(1, :) = 0
+plot_concs(2 : ntrans, 1) = sout(:, 1)
+plot_concs(2 : ntrans, 2) = sout(:, 2)
+plot_concs(2 : ntrans, 3) = sout(:, 4)
 plot_times = (/((i - 1) * save_dt, i = 1, save_steps)/)
 
 open (unit=12, file='time_concs.txt', action='write')
-write (12, *) shape(plot_concs)
+write (12, *) shape(plot_concs), save_steps + 1
+write (12, *) plot_concs
 
 j = 2
 ! time stepping
@@ -209,9 +213,10 @@ do m = 1, nsteps
     status = RM_GetSelectedOutput(id, sout)
 
     if (cur_time >= plot_times(j)) then
-        plot_concs(:, 1 : 9, j) = concs
-        plot_concs(2 : ntrans, 10 : 12, j) = sout
-        ! write (12, *) plot_concs(:, :, j)
+        plot_concs(2 : ntrans, 1) = sout(:, 1)
+        plot_concs(2 : ntrans, 2) = sout(:, 2)
+        plot_concs(2 : ntrans, 3) = sout(:, 4)
+        write (12, *) plot_concs
         j = j + 1
     endif
 
@@ -232,11 +237,12 @@ do m = 1, nsteps
     D = alpha_l * v; ! dispersion coefficient in long. direction (transverse is zero)
 
 enddo
+print *, '****done****'
 
-
-write (12, *) plot_concs
+! write (12, *) plot_concs
 close (unit=12, status='keep')
 
 status = RM_Destroy(id)
+! deallocate(everthing)
 
 end program dolo_ADRE
