@@ -5,10 +5,10 @@ program dolo_ADRE
 
 ! ======== Parameters ========
 integer, parameter                 :: nthreads = 4 ! number of openmp threads for reaction module
-double precision, parameter        :: maxtime = 60e3 ! 1000 MIN
-! integer, parameter                 :: maxtime = 15e3 ! 250 MIN
-! double precision, parameter        :: dx = 1e-3
-double precision, parameter        :: dx = 1e-1 ! ****for faster testing
+! double precision, parameter        :: maxtime = 60e3 ! 1000 MIN
+integer, parameter                 :: maxtime = 1e3 ! 250 MIN
+double precision, parameter        :: dx = 1e-3
+! double precision, parameter        :: dx = 1e-1 ! ****for faster testing
 integer, parameter                 :: ncell = nint(1.0d0/dx) - 1
     ! this could go wrong if dx is a weird number
     ! subtract 1 because won't be calculating chemistry for boundary cell
@@ -27,7 +27,7 @@ double precision, parameter        :: init_v = darvel/init_porosity
     ! ****update this on the fly as porosity changes
 double precision, parameter        :: alpha_l = 0.005 ! longitudinal dispersivity
 double precision, parameter        :: init_D = alpha_l*init_v
-double precision, parameter        :: v(ntrans - 1) = init_v, D(ntrans - 1) = init_D
+double precision                   :: v(ntrans - 1) = init_v, D(ntrans - 1) = init_D
     ! dispersion coefficient in long. direction (transverse is zero)
     ! ****this might be wrong, since units in paper give concs as mol/m^3
 
@@ -35,7 +35,8 @@ double precision, parameter        :: v(ntrans - 1) = init_v, D(ntrans - 1) = in
 double precision                   :: init_calcite, na_inflow, mg_inflow,&
                                            ca_inflow, cl_inflow, co2_inflow,&
                                            dolomite_inflow, quartz_inflow
-double precision, dimension(ncell) :: den_0, prs_0, tmp_0, sat_0, por_0, vol_0
+double precision, dimension(ncell) :: den_0, prs_0, tmp_0, sat_0, por_0, vol_0,&
+                                      solvol_post, por_v
 double precision                   :: cur_time
 integer                            :: i, j, m, id, status, save_on, ngrd
 integer                            :: ncomp, nchem, so_col
@@ -183,35 +184,56 @@ allocate(concs(ntrans, ncomp - 1), plot_concs(ntrans, ncomp + 2, save_steps),&
 concs(1, :) = bc_conc(1, 2 : ncomp)
 concs(2 : ntrans, :) = comp_conc(:, 2 : ncomp)
 plot_concs(:, 1 : 9, 1) = concs
-plot_concs(:, 10 : 12, 1) = sout
+plot_concs(1, 10 : 12, 1) = 0
+plot_concs(2 : ntrans, 10 : 12, 1) = sout
 plot_times = (/((i - 1) * save_dt, i = 1, save_steps)/)
+
+open (unit=12, file='time_concs.txt', action='write')
+write (12, *) shape(plot_concs)
 
 j = 2
 ! time stepping
 do m = 1, nsteps
-    call advect(concs(:, 1 : 9), v, dx, dt, ntrans)
-    call diffuse(concs(:, 1 : 9), D, dx, dt, ntrans)
+    call advect(concs(:, :), v, dx, dt, ntrans)
+    call diffuse(concs(:, :), D, dx, dt, ntrans)
 
     cur_time = cur_time + dt
     status = RM_SetTime(id, cur_time)
 
-    comp_conc(:, 2 : ncomp) = concs(2 : ntrans, 1 : 9)
+    comp_conc(:, 2 : ncomp) = concs(2 : ntrans, :)
     status = RM_SetConcentrations(id, comp_conc)
     status = RM_RunCells(id)
+    ! pause
     status = RM_GetConcentrations(id, comp_conc)
     concs(2 : ntrans, :) = comp_conc(:, 2 : ncomp)
     status = RM_GetSelectedOutput(id, sout)
 
     if (cur_time >= plot_times(j)) then
         plot_concs(:, 1 : 9, j) = concs
-        plot_concs(:, 10 : 12, j) = sout
+        plot_concs(2 : ntrans, 10 : 12, j) = sout
+        ! write (12, *) plot_concs(:, :, j)
         j = j + 1
     endif
 
+    ! recalculate porosity and reset cell saturation and solution volume
+    ! since, as defined by PHREEQCRM,
+    ! porosity = (solution volume)/(saturation * representative volume)
+    ! we want to maintain fully saturated cells (sat := 1, the initial value)
+    ! this implies that porosity = (solution volume)/(representative volume)
+    ! status = RM_GetSaturation(id, sat_post)
+    status = RM_GetSolutionVolume(id, solvol_post)
+    por_v = solvol_post/vol_0
+    status = RM_SetSaturation(id, sat_0)
+    status = RM_SetPorosity(id, por_v)
+
+    ! alter velocity and diffusion coefficient vectors, based on change in
+    ! porosity
+    v = darvel/por_v; ! advective velocity
+    D = alpha_l * v; ! dispersion coefficient in long. direction (transverse is zero)
+
 enddo
 
-open (unit=12, file='time_concs.txt', action='write')
-write (12, *) shape(plot_concs)
+
 write (12, *) plot_concs
 close (unit=12, status='keep')
 
