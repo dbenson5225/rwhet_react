@@ -1,74 +1,100 @@
-program reaction_test
+program dolo_ADRE
     use ADRE_mod
     use PhreeqcRM
     implicit none
 
-integer, parameter                 :: n = 1e1, d = 3, corr = n/2, nthreads = 1
-double precision, parameter        :: r2 = 0.01**2
-integer, parameter                 :: cgsize = ceiling(n*((4.0d0/3.0d0)*pi*r2))
-double precision, allocatable      :: x(:, :)
-integer                            :: correltime = 1 ! not quite sure what this does 
-integer                            :: i, id, status, save_on, ngrd
-double precision                   :: start, finish_tree, finish
-double precision                   :: calcite_in, Na_in, mg_in, ca_in, Cl_in, co2_in,&
-                                      dolomite_in, quartz_in
-double precision, dimension(n)     :: den_0, prs_0, tmp_0, sat_0, por_0, vol_0
-integer, dimension(n)              :: mask
-double precision                   :: cur_time, dt
-integer                            :: ncomp, nspec, nchem, so_col, so_row
-integer                            :: ic1(n, 7)
-type(species_list), allocatable    :: spec_list(:)
+! ======== Parameters ========
+integer, parameter                 :: nthreads = 3 ! number of openmp threads for reaction module
+double precision, parameter        :: maxtime = 60e3 ! 1000 MIN
+! integer, parameter                 :: maxtime = 15e3 ! 250 MIN
+double precision, parameter        :: dx = 1e-3
+integer, parameter                 :: ncell = nint(1.0d0/dx) - 1
+    ! this could go wrong if dx is a weird number
+    ! subtract 1 because won't be calculating chemistry for boundary cell
+double precision, parameter        :: dt = 1e0
+integer, parameter                 :: nsteps = nint(maxtime/dt)
+integer, parameter                 :: save_steps = nint(maxtime/(dt * 100.0d0))
+    ! time step for saving concentrations to plot them
+double precision, parameter        :: Omega = 0.5
+double precision, parameter        :: darvel = 1.2e-5 ! Darcy velocity [m/s]
+double precision, parameter        :: init_porosity = 0.5
+double precision, parameter        :: init_v = darvel/init_porosity
+    ! advective velocity
+    ! ****update this on the fly as porosity changes
+double precision, parameter        :: alpha_l = 0.005 ! longitudinal dispersivity
+double precision, parameter        :: init_D = alpha_l*init_v
+    ! dispersion coefficient in long. direction (transverse is zero)
+    ! ****this might be wrong, since units in paper give concs as mol/m^3
+
+! ======== general variables ========
+double precision                   :: init_calcite, na_inflow, mg_inflow,&
+                                           ca_inflow, cl_inflow, co2_inflow,&
+                                           dolomite_inflow, quartz_inflow
+double precision, dimension(ncell) :: den_0, prs_0, tmp_0, sat_0, por_0, vol_0
+double precision                   :: cur_time
+integer                            :: i, m, id, status, save_on, ngrd
+integer                            :: ncomp, nchem, so_col
+integer                            :: ic1(ncell, 7)
 type(component_list), allocatable  :: comp_list(:)
 type(selectout_list), allocatable  :: head_list(:)
+integer, dimension(ncell)     :: mask
 character(25)                      :: tempname
-double precision, allocatable      :: bc_conc(:, :), comp_conc(:, :), spec_conc(:, :), sout(:, :)
+double precision, allocatable      :: bc_conc(:, :), comp_conc(:, :),&
+                                      sout(:, :), concs(:, :),&
+                                      plot_concs(: , :, :)
 integer                            :: bc1(1) ! this is for one boundary condition
 
+double precision :: inmat(2, 2)
+
 cur_time = 0
-dt = 0.1
 
-! allocate (closeguys(n))
-! allocate (x(d, n))
+print *, '======================================='
+print *, 'grid_Pe =', dx/alpha_l
+print *, 'CFL = ', (init_v*dt)/dx
+print *, '======================================='
+! pause
 
-! call init_random_seed
-! call random_number(x)
-! call cpu_time(start)
-! call maketree(tree, x, d, n)
-! call cpu_time(finish_tree)
+! initial concentration [mol/L]
+init_calcite = .270865 ! = 270.865 mol/m^3
 
-! this is initial injection brine speciation
-calcite_in = 0.0;
-Na_in = 0.884882;
-mg_in = 0.0491601;
-ca_in = 0.00983202;
-Cl_in = 1.00287;
-co2_in = 0.36867;
-dolomite_in = 0.0;
-quartz_in = 0.0;
+! inflow concentration pCO2 [atm]
+! currently assumes molal = mol/kg SOLVENT
+! pco2_in = 10.0788
+! inflow concentration pCO2 [mol/L]
+! currently assumes molal = mol/kg SOLVENT
+! co2_inflow = 0.36867
+co2_inflow = 10.0 ! this is from Leal's input file
+
+! inflow concentrations [mol/L]
+! currently assumes molal = mol/kg SOLVENT
+na_inflow = 0.884882
+mg_inflow = 0.0491601
+ca_inflow = 0.00983202
+cl_inflow = 1.00287
+
+call phreeqc_input(init_calcite, na_inflow, mg_inflow, ca_inflow, cl_inflow,&
+                   co2_inflow, dolomite_inflow, quartz_inflow)
 
 ! ======== DEFINE PHYSICAL CONDITIONS ========
 ! These don't make much difference for this problem
-den_0 = 1.0;  ! Density
-prs_0 = 98.6923;  ! Pressure 98.6923 atm = 100 bar
-tmp_0 = 60.0; ! Temperature
-sat_0 = 1.0;  ! Saturation
-por_0 = 0.5;  ! Porosity
-vol_0 = 1.0;  ! Representative Volume of cell (L), default = 1
+den_0 = 1.0 ! Density
+prs_0 = 98.6923 ! Pressure 98.6923 atm = 100 bar
+tmp_0 = 60.0 ! Temperature
+sat_0 = 1.0 ! Saturation
+por_0 = init_porosity ! Porosity
+vol_0 = (Omega * 1e3)/dble(ncell) ! Representative Volume of cell (L), default = 1
 
 ! print chemistry mask to print only first element
 mask = 0
 mask(1) = 1
 
-call phreeqc_input(calcite_in, na_in, mg_in, ca_in, cl_in, co2_in, dolomite_in, quartz_in)
-
-id = RM_Create(n, nthreads)
+id = RM_Create(ncell, nthreads)
 status = RM_LoadDatabase(id, '/usr/local/share/doc/phreeqcrm/database/phreeqc.dat')
 if (status < 0) then
     print *, 'Database Load Error'
     call exit(status)
 endif
 
-save_on = RM_SetSpeciesSaveOn(id, 1)
 status = RM_OpenFiles(id)
 status = RM_SetRepresentativeVolume(id, vol_0)
 status = RM_SetSaturation(id, sat_0)
@@ -88,39 +114,36 @@ status = RM_RunFile(id, 1, 1, 1, 'dolomite_chem.in')
 
 ! for some reason, species count needs to be done before the initial condition
 ncomp = RM_FindComponents(id)
-nspec = RM_GetSpeciesCount(id)
 ! get number of grid cells in model (this can change, so it needs to be checked)
 ngrd = RM_GetGridCellCount(id)
-if (ngrd /= n) then
+if (ngrd /= ncell) then
     print *, '****** Cell count differs from particle number ******'
     call exit(status)
 endif
 
 nchem = RM_GetChemistryCellCount(id)
+if (nchem /= ncell) then
+    print *, '****** Chem count differs from particle number ******'
+    call exit(status)
+endif
 
 ! =======================================================================
-                ! INITIAL CONDITION
+                ! INITIAL/BOUNDARY CONDITIONS
 ! =======================================================================
 ! ===  (1) SOLUTIONS, (2) EQUILIBRIUM_PHASES, (3) EXCHANGE, 
 ! ===  (4) SURFACE, (5) GAS_PHASE, (6) SOLID_SOLUTIONS, and (7) KINETICS
  
 ic1 = -1
-
 ic1(:, 1) = 1
 ic1(:, 2) = 1
+
+allocate(bc_conc(1, ncomp))
+    ! must be 2D array for module--requires singleton dimension in this case
+bc1 = 0 ! corresponds to solution zero in input file
 
 status = RM_InitialPhreeqc2Module(id, ic1)
 !            >>>>> End of initial condition <<<<<
 ! =======================================================================
-
-allocate(spec_list(nspec))
-print *, 'nspec = ', nspec
-do i = 1, nspec
-    status = RM_GetSpeciesName(id, i, tempname)
-    allocate(character(len_trim(tempname)) :: spec_list(i)%spec)
-    spec_list(i)%spec = trim(tempname)
-    print *, spec_list(i)%spec
-enddo
 
 allocate(comp_list(ncomp))
 print *, 'ncomp = ', ncomp
@@ -131,49 +154,39 @@ do i = 1, ncomp
     print *, comp_list(i)%comp
 enddo
 
-allocate(bc_conc(1, ncomp))
-bc1 = 0 ! corresponds to solution zero in input file--must be 2D array
+status = RM_RunCells(id)
+
+allocate(comp_conc(ncell, ncomp))
+status = RM_GetConcentrations(id, comp_conc)
+
 status = RM_InitialPhreeqc2Concentrations(id, bc_conc, 1, bc1)
 
-allocate(comp_conc(n, ncomp), spec_conc(n, nspec))
-! not sure if this initial get is necessary
-status = RM_GetConcentrations(id, comp_conc)
-status = RM_GetSpeciesConcentrations(id, spec_conc)
+! dimension is ncell x ncomp - 1 because we will not be doing transport
+    ! calculations for H2O
+! For this specific case:
+! (1) H, (2) O, (3) charge, (4) C, (5) Ca, (6) Cl, (7) Mg, (8) Na, (9) Si
+! **** plot_concs ****
+! (10) pH, (11) calcite, (12) dolomite
+allocate(concs(ncell, ncomp - 1), plot_concs(ncell, ncomp + 2, save_steps))
+    ! *****probably will want to only save certain species later, but for now,
+        ! let's keep them all
+concs(1, :) = bc_conc(1, 2 : ncomp)
+concs(2 : ncell, :) = comp_conc(:, 2 : ncomp)
+plot_concs(:, :, 1) = concs
 
-status = RM_RunCells(id)
-status = RM_GetConcentrations(id, comp_conc)
 so_col = RM_GetSelectedOutputcolumncount(id)
-so_row = RM_GetSelectedOutputrowcount(id)
-allocate(sout(so_row, so_col))
+allocate(sout(ncell, so_col))
 status = RM_GetSelectedOutput(id, sout)
 
-allocate(head_list(so_col))
-do i = 1, so_col
-    status = RM_GetSelectedOutputheading(id, i, tempname)
-    allocate(character(len_trim(tempname)) :: head_list(i)%head)
-    head_list(i)%head = trim(tempname)
-    print *, head_list(i)%head
-enddo
+! time stepping
+do m = 1, nsteps
+    inmat = 3
+    call advect(inmat)
+    print *, 'inmat = ', inmat
+    ! call diffuse()
+enddo 
 
 status = RM_Destroy(id)
 
-print *, 'status = ', status
 
-! do i = 1, n
-!     call find_neighbs(tree, i, correltime, r2, cgsize, closeguys(i)%indices, closeguys(i)%dists)
-! end do
-
-! do i = 1, n
-!     write (*,*) 'i = ', i, 'closeguys = ', closeguys(i)%indices
-!     write (*,*) 'distances = ', closeguys(i)%dists
-! end do
-
-! call cpu_time(finish)
-
-! write (*,*) 'tree build time = ', finish_tree - start
-! write (*,*) 'total time = ', finish - start
-
-! call kdtree2_destroy(tree)
-! deallocate(x)
-
-end program reaction_test
+end program dolo_ADRE

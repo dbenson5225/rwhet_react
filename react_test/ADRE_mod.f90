@@ -1,9 +1,6 @@
 module ADRE_mod
     implicit none
 
-    type species_list
-        character(:), allocatable :: spec
-    end type
     type component_list
         character(:), allocatable :: comp
     end type
@@ -48,10 +45,10 @@ module ADRE_mod
         write (11, '(A, A, f8.6)') tab, 'Ca ', ca_in
         write (11, '(A, A, f8.6)') tab, 'Cl ', cl_in
         write (11, *) 'EQUILIBRIUM_PHASES 0'
-        write (11, '(A, A, f8.6)') tab, 'Calcite 0.000000 ', calcite_in
-        write (11, '(A, A, f8.6)') tab, 'Dolomite 0.000000 ', dolomite_in
+        write (11, '(A, A, f8.6)') tab, 'Calcite 0.000000 0.000000'
+        write (11, '(A, A, f8.6)') tab, 'Dolomite 0.000000 0.000000'
         write (11, '(A, A, f8.6)') tab, 'CO2(g) -3.500000 ', co2_in
-        write (11, '(A, A, f8.6)') tab, 'Quartz 0.000000 ', quartz_in
+        write (11, '(A, A, f8.6)') tab, 'Quartz 0.000000 0.000000'
         write (11,*) 'SAVE solution 0'
         write (11,*) 'SOLUTION 1 Domain_brine'
         write (11,*) tab, 'pH 7 charge'
@@ -63,7 +60,7 @@ module ADRE_mod
         write (11,*) tab, 'Ca 0.000000'
         write (11,*) tab, 'Cl 0.000000'
         write (11,*) 'EQUILIBRIUM_PHASES 1'
-        write (11,*) tab, 'Calcite 0.000000 0.270000'
+        write (11,*) tab, 'Calcite 0.000000', calcite_in
         write (11,*) tab, 'Dolomite 0.000000 0.000000'
         write (11,*) tab, 'CO2(g) -3.500000 0.000000'
         write (11,*) tab, 'Quartz 0.000000 22.000000'
@@ -80,5 +77,12 @@ module ADRE_mod
         write (11,*) 'END'
         close (unit=11, status='keep')
     end subroutine
+
+    subroutine advect(mat, v, D, dx, dt)
+        double precision, intent(inout) :: mat(:, :)
+
+        mat = 2 * mat
+
+    end subroutine advect
 
 end module ADRE_mod
