@@ -45,10 +45,10 @@ module ADRE_mod
         write (11, '(A, A, f8.6)') tab, 'Ca ', ca_in
         write (11, '(A, A, f8.6)') tab, 'Cl ', cl_in
         write (11, *) 'EQUILIBRIUM_PHASES 0'
-        write (11, '(A, A, f8.6)') tab, 'Calcite 0.000000 0.000000'
-        write (11, '(A, A, f8.6)') tab, 'Dolomite 0.000000 0.000000'
-        write (11, '(A, A, f8.6)') tab, 'CO2(g) -3.500000 ', co2_in
-        write (11, '(A, A, f8.6)') tab, 'Quartz 0.000000 0.000000'
+        write (11, '(A, A)')       tab, 'Calcite 0.000000 0.000000'
+        write (11, '(A, A)')       tab, 'Dolomite 0.000000 0.000000'
+        write (11, '(A, A, f9.6)') tab, 'CO2(g) -3.500000 ', co2_in
+        write (11, '(A, A)')       tab, 'Quartz 0.000000 0.000000'
         write (11,*) 'SAVE solution 0'
         write (11,*) 'SOLUTION 1 Domain_brine'
         write (11,*) tab, 'pH 7 charge'
@@ -78,11 +78,39 @@ module ADRE_mod
         close (unit=11, status='keep')
     end subroutine
 
-    subroutine advect(mat, v, D, dx, dt)
+    subroutine advect(mat, v, dx, dt, ncell)
         double precision, intent(inout) :: mat(:, :)
+        double precision, intent(in   ) :: v(:), dx, dt
+        integer,          intent(in   ) :: ncell
+        double precision, allocatable   :: vmat(:, :)
+        integer                         :: i, matcol
 
-        mat = 2 * mat
+        matcol = size(mat, 2)
+        allocate(vmat(ncell, matcol))
+        do i = 1, matcol
+            vmat(:, i) = v
+        enddo
 
+        mat(2 : ncell, :) = mat(2 : ncell, :) - ((vmat * dt)/dx) *&
+            (mat(2 : ncell, :) - mat(1 : ncell - 1, :))
     end subroutine advect
+
+    subroutine diffuse(mat, D, dx, dt, ncell)
+        double precision, intent(inout) :: mat(:, :)
+        double precision, intent(in   ) :: D(:), dx, dt
+        integer,          intent(in   ) :: ncell
+        double precision, allocatable   :: Dmat(:, :)
+        integer                         :: i, matcol
+
+        matcol = size(mat, 2)
+        allocate(Dmat(ncell, matcol))
+        do i = 1, matcol
+            Dmat(:, i) = D
+        enddo
+
+        mat(2 : ncell - 1, :) = mat(2 : ncell, :) + ((Dmat * dt)/dx**2) *&
+                                (mat(3 : ncell, :) - 2 * mat(2 : ncell - 1, :)&
+                                    + mat(1 : ncell - 2, :))
+    end subroutine diffuse
 
 end module ADRE_mod
