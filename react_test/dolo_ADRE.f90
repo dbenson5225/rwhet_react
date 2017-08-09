@@ -4,10 +4,10 @@ program dolo_ADRE
     implicit none
 
 ! ======== Parameters ========
-integer, parameter                 :: nthreads = 4 ! number of openmp threads for reaction module
+integer, parameter                 :: nthreads = 8 ! number of openmp threads for reaction module
 ! double precision, parameter        :: maxtime = 60e3 ! 1000 MIN
 integer, parameter                 :: maxtime = 15e3 ! 250 MIN
-! integer, parameter                 :: maxtime = 5e3 ! less, for testing
+!integer, parameter                 :: maxtime = 5e3 ! less, for testing
 double precision, parameter        :: dx = 1e-3
 ! double precision, parameter        :: dx = 1e-1 ! ****for faster testing
 integer, parameter                 :: ncell = nint(1.0d0/dx) - 1
@@ -53,6 +53,8 @@ integer                            :: bc1(1) ! this is for one boundary conditio
 
 cur_time = 0
 
+print *, '****test****'
+
 print *, '======================================='
 print *, 'grid_Pe =', dx/alpha_l
 print *, 'CFL = ', (init_v*dt)/dx
@@ -93,7 +95,7 @@ mask = 0
 mask(1) = 1
 
 id = RM_Create(ncell, nthreads)
-status = RM_LoadDatabase(id, '/usr/local/share/doc/phreeqcrm/database/phreeqc.dat')
+status = RM_LoadDatabase(id, '/u/au/er/mschmidt1/share/doc/phreeqcrm/database/phreeqc.dat')
 if (status < 0) then
     print *, 'Database Load Error'
     call exit(status)

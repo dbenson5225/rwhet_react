@@ -1,7 +1,8 @@
 #!/bin/bash
 
+#export LD_LIBRARY_PATH=/u/au/er/mschmidt1/lib:$LD_LIBRARY_PATH
 make
-./adre_exe > a.out 2>&1
+./adre_exe > a.out 2>&1 &
 
 # gfortran -c ADRE_mod.f90
 # gfortran -o trans_exe test_trans.f90 ADRE_mod.f90

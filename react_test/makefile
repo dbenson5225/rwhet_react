@@ -11,13 +11,12 @@ react_exe: $(react_files)
 	$(FC90) RM_interface.F90 -c
 	$(FC90) kdtree2.f90 -c
 	$(FC90) react.f90 -c
-	$(FC90) $(react_files) -o $@ -L/usr/local/lib -lphreeqcrm
-	# -I/usr/local/include
+	$(FC90) $(react_files) -o $@ -L/u/au/er/mschmidt1/lib -lphreeqcrm
 
 adre_exe: $(adre_files)
 	$(FC90) RM_interface.F90 -c
 	$(FC90) ADRE_mod.f90 -c
-	$(FC90) $(adre_files) -o $@ -L/usr/local/lib -lphreeqcrm
+	$(FC90) $(adre_files) -o $@ -L/u/au/er/mschmidt1/lib -lphreeqcrm
 
 clean: 
 	rm *_exe *.mod x.txt closeguys.txt *.o *.out
