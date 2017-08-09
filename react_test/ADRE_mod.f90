@@ -86,13 +86,13 @@ module ADRE_mod
         integer                         :: i, matcol
 
         matcol = size(mat, 2)
-        allocate(vmat(ncell, matcol))
+        allocate(vmat(ncell - 1, matcol))
         do i = 1, matcol
-            vmat(:, i) = v
+            vmat(:, i) = v(1 : ncell - 1)
         enddo
 
         mat(2 : ncell, :) = mat(2 : ncell, :) - ((vmat * dt)/dx) *&
-            (mat(2 : ncell, :) - mat(1 : ncell - 1, :))
+                            (mat(2 : ncell, :) - mat(1 : ncell - 1, :))
     end subroutine advect
 
     subroutine diffuse(mat, D, dx, dt, ncell)
@@ -103,9 +103,9 @@ module ADRE_mod
         integer                         :: i, matcol
 
         matcol = size(mat, 2)
-        allocate(Dmat(ncell, matcol))
+        allocate(Dmat(ncell - 2, matcol))
         do i = 1, matcol
-            Dmat(:, i) = D
+            Dmat(:, i) = D(1 : ncell - 2)
         enddo
 
         mat(2 : ncell - 1, :) = mat(2 : ncell - 1, :) + ((Dmat * dt)/(dx**2)) *&
