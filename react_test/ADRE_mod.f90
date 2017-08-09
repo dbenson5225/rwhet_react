@@ -108,7 +108,7 @@ module ADRE_mod
             Dmat(:, i) = D
         enddo
 
-        mat(2 : ncell - 1, :) = mat(2 : ncell, :) + ((Dmat * dt)/dx**2) *&
+        mat(2 : ncell - 1, :) = mat(2 : ncell - 1, :) + ((Dmat * dt)/(dx**2)) *&
                                 (mat(3 : ncell, :) - 2 * mat(2 : ncell - 1, :)&
                                     + mat(1 : ncell - 2, :))
     end subroutine diffuse

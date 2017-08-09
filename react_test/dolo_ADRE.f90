@@ -6,9 +6,9 @@ program dolo_ADRE
 ! ======== Parameters ========
 integer, parameter                 :: nthreads = 4 ! number of openmp threads for reaction module
 ! double precision, parameter        :: maxtime = 60e3 ! 1000 MIN
-! integer, parameter                 :: maxtime = 15e3 ! 250 MIN
-integer, parameter                 :: maxtime = 15e3 ! less, for testing
-double precision, parameter        :: dx = 1e-2
+integer, parameter                 :: maxtime = 15e3 ! 250 MIN
+! integer, parameter                 :: maxtime = 5e3 ! less, for testing
+double precision, parameter        :: dx = 1e-3
 ! double precision, parameter        :: dx = 1e-1 ! ****for faster testing
 integer, parameter                 :: ncell = nint(1.0d0/dx) - 1
     ! this could go wrong if dx is a weird number
@@ -51,8 +51,6 @@ double precision, allocatable      :: bc_conc(:, :), comp_conc(:, :),&
                                       plot_concs(: , :), plot_times(:)
 integer                            :: bc1(1) ! this is for one boundary condition
 
-double precision :: testmat(2, 2, 2)
-
 cur_time = 0
 
 print *, '======================================='
@@ -83,7 +81,6 @@ call phreeqc_input(init_calcite, na_inflow, mg_inflow, ca_inflow, cl_inflow,&
                    co2_inflow, dolomite_inflow, quartz_inflow)
 
 ! ======== DEFINE PHYSICAL CONDITIONS ========
-! These don't make much difference for this problem
 den_0 = 1.0 ! Density
 prs_0 = 98.6923 ! Pressure 98.6923 atm = 100 bar
 tmp_0 = 60.0 ! Temperature
@@ -91,7 +88,7 @@ sat_0 = 1.0 ! Saturation
 por_0 = init_porosity ! Porosity
 vol_0 = (Omega * 1e3)/dble(ncell) ! Representative Volume of cell (L), default = 1
 
-! print chemistry mask to print only first element
+! print chemistry mask to print detailed output (headings) for only first element
 mask = 0
 mask(1) = 1
 
@@ -152,6 +149,7 @@ status = RM_InitialPhreeqc2Module(id, ic1)
 !            >>>>> End of initial condition <<<<<
 ! =======================================================================
 
+! this makes a list of the names of components
 ! allocate(comp_list(ncomp))
 ! ! print *, 'ncomp = ', ncomp
 ! do i = 1, ncomp
@@ -174,8 +172,8 @@ status = RM_GetSelectedOutput(id, sout)
 ! **** standard output ****
 ! (1) pH, (2) calcite, (3) change calcite, (4) dolomite, (5), change dolomite
 
-! dimension is ncell x ncomp - 1 because we will not be doing transport
-    ! calculations for H2O
+! dimension of concs is ntrans (# chemistry cells + 1 for boundary) x ncomp - 1
+    ! because we will not be doing transport calculations for H2O
 ! For this specific case:
 ! (1) H, (2) O, (3) charge, (4) C, (5) Ca, (6) Cl, (7) Mg, (8) Na, (9) Si
 ! **** plot_concs ****
@@ -186,6 +184,7 @@ allocate(concs(ntrans, ncomp - 1), plot_concs(ntrans, 3), plot_times(save_steps)
 concs(1, :) = bc_conc(1, 2 : ncomp)
 concs(2 : ntrans, :) = comp_conc(:, 2 : ncomp)
 plot_concs(1, :) = 0
+! because we don't have standard output for boundary--doesn't really matter
 plot_concs(2 : ntrans, 1) = sout(:, 1)
 plot_concs(2 : ntrans, 2) = sout(:, 2)
 plot_concs(2 : ntrans, 3) = sout(:, 4)
@@ -239,10 +238,9 @@ do m = 1, nsteps
 enddo
 print *, '****done****'
 
-! write (12, *) plot_concs
 close (unit=12, status='keep')
 
 status = RM_Destroy(id)
-! deallocate(everthing)
+deallocate(concs, plot_concs, plot_times, sout, comp_conc, bc_conc)
 
 end program dolo_ADRE
