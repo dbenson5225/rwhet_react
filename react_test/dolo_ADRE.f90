@@ -205,7 +205,7 @@ plot_concs(2 : ntrans, 3) = sout(:, 4)
 plot_times = (/((i - 1) * save_dt, i = 1, save_steps)/)
 
 open (unit=12, file='time_concs.txt', action='write')
-write (12, *) shape(plot_concs), save_steps + 1
+write (12, *) shape(plot_concs), save_steps
 write (12, *) plot_concs
 
 j = 2
