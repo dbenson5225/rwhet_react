@@ -223,7 +223,6 @@ do m = 1, nsteps
     ! pause
     status = RM_GetConcentrations(id, comp_conc)
     concs(2 : ntrans, :) = comp_conc(:, 2 : ncomp)
-    status = RM_GetSelectedOutput(id, sout)
 
     ! new = RM_FindComponents(id)
     ! if (new /= ncomp) then
@@ -231,6 +230,7 @@ do m = 1, nsteps
     ! endif
 
     if (cur_time >= plot_times(j)) then
+        status = RM_GetSelectedOutput(id, sout)
         plot_concs(2 : ntrans, 1) = sout(:, 1)
         plot_concs(2 : ntrans, 2) = sout(:, 2)
         plot_concs(2 : ntrans, 3) = sout(:, 4)
