@@ -4,9 +4,10 @@ program test_trans
     implicit none
 
 integer, parameter                 :: maxtime = 15e3 ! less, for testing
-double precision, parameter        :: dx = 1e-4
+double precision, parameter        :: Omega = 0.5
+double precision, parameter        :: dx = 1e-3
 ! double precision, parameter        :: dx = 1e-1 ! ****for faster testing
-integer, parameter                 :: ncell = nint(1.0d0/dx) - 1
+integer, parameter                 :: ncell = nint(Omega/dx) - 1
     ! this could go wrong if dx is a weird number
     ! subtract 1 because won't be calculating chemistry for boundary cell
 integer, parameter                 :: ntrans = ncell + 1
@@ -16,7 +17,6 @@ integer, parameter                 :: nsteps = nint(maxtime/dt) + 1
 double precision, parameter        :: save_dt = dt * 100.0d0
 integer, parameter                 :: save_steps = nint(maxtime/(save_dt)) + 1
     ! time step for saving concentrations to plot them
-double precision, parameter        :: Omega = 0.5
 double precision, parameter        :: darvel = 1.2e-5 ! Darcy velocity [m/s]
 double precision, parameter        :: init_porosity = 0.5
 double precision, parameter        :: init_v = darvel/init_porosity
@@ -45,7 +45,6 @@ write (12, *) plot_concs
 j = 2
 ! time stepping
 do m = 1, nsteps
-    print *, 'm = ', m
     call advect(concs(:, :), v, dx, dt, ntrans)
     ! call diffuse(concs(:, :), D, dx, dt, ntrans)
 

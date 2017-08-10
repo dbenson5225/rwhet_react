@@ -7,10 +7,11 @@ program dolo_ADRE
 integer, parameter                 :: nthreads = 1 ! number of openmp threads for reaction module
 ! double precision, parameter        :: maxtime = 60e3 ! 1000 MIN
 ! integer, parameter                 :: maxtime = 15e3 ! 250 MIN
-integer, parameter                 :: maxtime = 1e3 ! less, for testing
-! double precision, parameter        :: dx = 1e-3
-double precision, parameter        :: dx = 1e-1 ! ****for faster testing
-integer, parameter                 :: ncell = nint(1.0d0/dx) - 1
+integer, parameter                 :: maxtime = 5e3 ! less, for testing
+double precision, parameter        :: Omega = 0.5 ! length of domain [m]
+double precision, parameter        :: dx = 1e-3
+! double precision, parameter        :: dx = 1e-1 ! ****for faster testing
+integer, parameter                 :: ncell = nint(Omega/dx) - 1
     ! this could go wrong if dx is a weird number
     ! subtract 1 because won't be calculating chemistry for boundary cell
 integer, parameter                 :: ntrans = ncell + 1
@@ -20,7 +21,6 @@ integer, parameter                 :: nsteps = nint(maxtime/dt)
 double precision, parameter        :: save_dt = dt * 100.0d0
 integer, parameter                 :: save_steps = nint(maxtime/(save_dt)) + 1
     ! time step for saving concentrations to plot them
-double precision, parameter        :: Omega = 0.5
 double precision, parameter        :: darvel = 1.2e-5 ! Darcy velocity [m/s]
 double precision, parameter        :: init_porosity = 0.5
 double precision, parameter        :: init_v = darvel/init_porosity
@@ -52,10 +52,6 @@ double precision, allocatable      :: bc_conc(:, :), comp_conc(:, :),&
 integer                            :: bc1(1) ! this is for one boundary condition
 
 cur_time = 0
-
-print *, 'darvel = ', darvel
-print *, 'init_v = ', init_v
-print *, 'init_D = ', init_D
 
 print *, '======================================='
 print *, 'grid_Pe =', dx/alpha_l
@@ -229,6 +225,11 @@ do m = 1, nsteps
     concs(2 : ntrans, :) = comp_conc(:, 2 : ncomp)
     status = RM_GetSelectedOutput(id, sout)
 
+    ! new = RM_FindComponents(id)
+    ! if (new /= ncomp) then
+    !     print *, '****** Component count has changed ******'
+    ! endif
+
     if (cur_time >= plot_times(j)) then
         plot_concs(2 : ntrans, 1) = sout(:, 1)
         plot_concs(2 : ntrans, 2) = sout(:, 2)
@@ -254,7 +255,6 @@ do m = 1, nsteps
     D = alpha_l * v; ! dispersion coefficient in long. direction (transverse is zero)
 
 enddo
-print *, '****done****'
 
 close (unit=12, status='keep')
 
