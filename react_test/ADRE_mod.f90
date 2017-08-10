@@ -51,7 +51,7 @@ module ADRE_mod
         write (11, '(A, A)')       tab, 'Quartz 0.000000 0.000000'
         write (11,*) 'SAVE solution 0'
         write (11,*) 'SOLUTION 1 Domain_brine'
-        write (11,*) tab, 'pH 7 charge'
+        write (11,*) tab, 'pH 7.000000 charge'
         write (11,*) tab, 'units mol/L'
         write (11,*) tab, 'temp 60.000000'
         write (11,*) tab, 'pressure 100.000000 atm'
@@ -93,6 +93,8 @@ module ADRE_mod
 
         mat(2 : ncell, :) = mat(2 : ncell, :) - ((vmat * dt)/dx) *&
                             (mat(2 : ncell, :) - mat(1 : ncell - 1, :))
+
+        deallocate(vmat)
     end subroutine advect
 
     subroutine diffuse(mat, D, dx, dt, ncell)
@@ -111,6 +113,7 @@ module ADRE_mod
         mat(2 : ncell - 1, :) = mat(2 : ncell - 1, :) + ((Dmat * dt)/(dx**2)) *&
                                 (mat(3 : ncell, :) - 2 * mat(2 : ncell - 1, :)&
                                     + mat(1 : ncell - 2, :))
+        deallocate(Dmat)
     end subroutine diffuse
 
 end module ADRE_mod

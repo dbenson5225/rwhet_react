@@ -6,21 +6,21 @@ program dolo_ADRE
 ! ======== Parameters ========
 integer, parameter                 :: nthreads = 8 ! number of openmp threads for reaction module
 ! double precision, parameter        :: maxtime = 60e3 ! 1000 MIN
-integer, parameter                 :: maxtime = 15e3 ! 250 MIN
-!integer, parameter                 :: maxtime = 5e3 ! less, for testing
+! integer, parameter                 :: maxtime = 15e3 ! 250 MIN
+integer, parameter                 :: maxtime = 5e3 ! less, for testing
+double precision, parameter        :: Omega = 0.5 ! length of domain [m]
 double precision, parameter        :: dx = 1e-3
 ! double precision, parameter        :: dx = 1e-1 ! ****for faster testing
-integer, parameter                 :: ncell = nint(1.0d0/dx) - 1
+integer, parameter                 :: ncell = nint(Omega/dx) - 1
     ! this could go wrong if dx is a weird number
     ! subtract 1 because won't be calculating chemistry for boundary cell
 integer, parameter                 :: ntrans = ncell + 1
     ! number of cells for transport
 double precision, parameter        :: dt = 1e0
-integer, parameter                 :: nsteps = nint(maxtime/dt) + 1
+integer, parameter                 :: nsteps = nint(maxtime/dt)
 double precision, parameter        :: save_dt = dt * 100.0d0
 integer, parameter                 :: save_steps = nint(maxtime/(save_dt)) + 1
     ! time step for saving concentrations to plot them
-double precision, parameter        :: Omega = 0.5
 double precision, parameter        :: darvel = 1.2e-5 ! Darcy velocity [m/s]
 double precision, parameter        :: init_porosity = 0.5
 double precision, parameter        :: init_v = darvel/init_porosity
@@ -42,18 +42,16 @@ double precision                   :: cur_time
 integer                            :: i, j, m, id, status, save_on, ngrd
 integer                            :: ncomp, nchem, so_col
 integer                            :: ic1(ncell, 7)
-type(component_list), allocatable  :: comp_list(:)
+! type(component_list), allocatable  :: comp_list(:)
 ! type(selectout_list), allocatable  :: head_list(:)
 integer, dimension(ncell)          :: mask
-character(25)                      :: tempname
+! character(25)                      :: tempname
 double precision, allocatable      :: bc_conc(:, :), comp_conc(:, :),&
                                       sout(:, :), concs(:, :),&
                                       plot_concs(: , :), plot_times(:)
 integer                            :: bc1(1) ! this is for one boundary condition
 
 cur_time = 0
-
-print *, '****test****'
 
 print *, '======================================='
 print *, 'grid_Pe =', dx/alpha_l
@@ -163,6 +161,20 @@ status = RM_InitialPhreeqc2Module(id, ic1)
 
 status = RM_RunCells(id)
 
+! so_col = RM_GetSelectedOutputcolumncount(id)
+! so_row = RM_GetSelectedOutputrowcount(id)
+! allocate(sout(so_row, so_col))
+! status = RM_GetSelectedOutput(id, sout)
+
+! this makes a list of the names of selected output elements
+! allocate(head_list(so_col))
+! do i = 1, so_col
+!     status = RM_GetSelectedOutputheading(id, i, tempname)
+!     allocate(character(len_trim(tempname)) :: head_list(i)%head)
+!     head_list(i)%head = trim(tempname)
+!     print *, head_list(i)%head
+! enddo
+
 allocate(comp_conc(ncell, ncomp))
 status = RM_GetConcentrations(id, comp_conc)
 
@@ -213,6 +225,11 @@ do m = 1, nsteps
     concs(2 : ntrans, :) = comp_conc(:, 2 : ncomp)
     status = RM_GetSelectedOutput(id, sout)
 
+    ! new = RM_FindComponents(id)
+    ! if (new /= ncomp) then
+    !     print *, '****** Component count has changed ******'
+    ! endif
+
     if (cur_time >= plot_times(j)) then
         plot_concs(2 : ntrans, 1) = sout(:, 1)
         plot_concs(2 : ntrans, 2) = sout(:, 2)
@@ -238,7 +255,6 @@ do m = 1, nsteps
     D = alpha_l * v; ! dispersion coefficient in long. direction (transverse is zero)
 
 enddo
-print *, '****done****'
 
 close (unit=12, status='keep')
 
