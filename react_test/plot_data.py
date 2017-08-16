@@ -44,5 +44,5 @@ def init():
     return line,
 
 ani = animation.FuncAnimation(fig, animate, np.arange(1, dims[2]), init_func=init,
-                              interval=10, blit=True)
+                              interval=10, repeat=False, blit=True)
 plt.show()
