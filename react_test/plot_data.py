@@ -1,5 +1,5 @@
 """
-    Usage: python pplot_data.py input_file quantity_of_interest (0 = pH, 1 = calcite, 2 = dolomite)
+    Usage: python plot_data.py input_file quantity_of_interest (0 = pH, 1 = calcite, 2 = dolomite)
     Example: python pass_fail.py time_concs.txt 0
 """
 import sys, os
