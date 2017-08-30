@@ -51,7 +51,7 @@ module ADRE_mod
         write (11, *) 'EQUILIBRIUM_PHASES 0'
         ! write (11, '(A, A)')       tab, 'Calcite 0.000000 0.000000'
         ! write (11, '(A, A)')       tab, 'Dolomite 0.000000 0.000000'
-        write (11, '(A, A, f9.6)') tab, 'CO2(g) 1.5 ', co2_in
+        write (11, '(A, A, f9.6)') tab, 'CO2(g) 2.5 ', co2_in
         ! write (11, '(A, A, f9.6)') tab, 'CO2(g) -3.500000 0.27'
         ! write (11, '(A, A)')       tab, 'Quartz 0.000000 0.000000'
         write (11,*) 'SAVE solution 0'
@@ -70,7 +70,7 @@ module ADRE_mod
         write (11,*) tab, 'Cl 0.0100 charge'
         write (11,*) 'EQUILIBRIUM_PHASES 1'
         write (11,*) tab, 'Calcite 0.000000', calcite_in
-        ! write (11,*) tab, 'Dolomite 0.000000 0.000000'
+        write (11,*) tab, 'Dolomite 0.000000 0.000000'
         ! write (11,*) tab, 'CO2(g) -3.500000 0.000000'
         ! write (11,*) tab, 'CO2(g) 000000 0.000000'
         write (11,*) tab, 'Quartz 0.000000 22.000000'

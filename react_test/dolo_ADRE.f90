@@ -6,8 +6,8 @@ program dolo_ADRE
 ! ======== Parameters ========
 integer, parameter                 :: nthreads = 8 ! number of openmp threads for reaction module
 double precision, parameter        :: maxtime = 60e3 ! 1000 MIN
-! integer, parameter                 :: maxtime = 15e3 ! 250 MIN
-!integer, parameter                 :: maxtime = 5e3 ! less, for testing
+!integer, parameter                 :: maxtime = 15e3 ! 250 MIN
+!integer, parameter                 :: maxtime = 3e3 ! less, for testing
 double precision, parameter        :: Omega = 0.5 ! length of domain [m]
 double precision, parameter        :: dx = 1e-3
 ! double precision, parameter        :: dx = 1e-1 ! ****for faster testing
