@@ -36,34 +36,45 @@ module ADRE_mod
         open (unit=11, file='dolomite_chem.in', action='write')
         write (11, *) '# Brine-CO2-Calcite-Quartz system'
         write (11, *) 'SOLUTION 0 Brine'
-        write (11, *) tab, 'pH 7.000000 charge'
+        write (11, *) tab, 'pH 7.0 charge'
         write (11, *) tab, 'units mol/L'
         write (11, *) tab, 'temp 60.000000'
-        write (11, *) tab, 'pressure 100.000000 atm'
+        ! write (11, *) tab, 'pe 4'
+        ! write (11, *) tab, 'redox pe'
+        write (11, *) tab, 'pressure 98.6923 atm' ! = 100 bar
+        ! write (11, '(A, A, f8.6, A)') tab, 'Na ', Na_in, ' charge'
         write (11, '(A, A, f8.6)') tab, 'Na ', Na_in
         write (11, '(A, A, f8.6)') tab, 'Mg ', mg_in
         write (11, '(A, A, f8.6)') tab, 'Ca ', ca_in
-        write (11, '(A, A, f8.6)') tab, 'Cl ', cl_in
+        write (11, '(A, A, f8.6, A)') tab, 'Cl ', cl_in!, ' charge'
+        ! write (11, '(A, A, f9.6)') tab, 'Cl ', cl_in
         write (11, *) 'EQUILIBRIUM_PHASES 0'
-        write (11, '(A, A)')       tab, 'Calcite 0.000000 0.000000'
-        write (11, '(A, A)')       tab, 'Dolomite 0.000000 0.000000'
-        write (11, '(A, A, f9.6)') tab, 'CO2(g) -3.500000 ', co2_in
-        write (11, '(A, A)')       tab, 'Quartz 0.000000 0.000000'
+        ! write (11, '(A, A)')       tab, 'Calcite 0.000000 0.000000'
+        ! write (11, '(A, A)')       tab, 'Dolomite 0.000000 0.000000'
+        ! write (11, '(A, A, f9.6)') tab, 'CO2(g) -3.5 ', co2_in
+        write (11, '(A, A, f9.6)') tab, 'CO2(g) 1.500000 10.00'
+        ! write (11, '(A, A)')       tab, 'Quartz 0.000000 0.000000'
         write (11,*) 'SAVE solution 0'
-        write (11,*) 'SOLUTION 1 Domain_brine'
-        write (11,*) tab, 'pH 7.000000 charge'
+        write (11,*) 'END'
+        write (11,*) 'SOLUTION 1 Domain'
+        ! write (11,*) tab, 'pH 2.8'! charge'
+        write (11,*) tab, 'pH 7.0 charge'
         write (11,*) tab, 'units mol/L'
         write (11,*) tab, 'temp 60.000000'
-        write (11,*) tab, 'pressure 100.000000 atm'
-        write (11,*) tab, 'Na 0.000000'
-        write (11,*) tab, 'Mg 0.000000'
-        write (11,*) tab, 'Ca 0.000000'
-        write (11,*) tab, 'Cl 0.000000'
+        write (11,*) tab, 'pressure 98.6923 atm' ! = 100 bar
+        ! write (11,*) tab, 'Na 0.000000 charge'
+        ! write (11,*) tab, 'Na 0.000000'
+        ! write (11,*) tab, 'Mg 0.000000'
+        ! write (11,*) tab, 'Ca 0.000000'
+        ! write (11,*) tab, 'Cl 0.000000'
+        ! write (11,*) tab, 'Cl 0.010000 charge'
         write (11,*) 'EQUILIBRIUM_PHASES 1'
         write (11,*) tab, 'Calcite 0.000000', calcite_in
-        write (11,*) tab, 'Dolomite 0.000000 0.000000'
-        write (11,*) tab, 'CO2(g) -3.500000 0.000000'
+        ! write (11,*) tab, 'Dolomite 0.000000 0.000000'
+        ! write (11,*) tab, 'CO2(g) -3.500000 0.000000'
+        ! write (11,*) tab, 'CO2(g) 000000 0.000000'
         write (11,*) tab, 'Quartz 0.000000 22.000000'
+        write (11,*) 'SAVE solution 1'
         write (11,*) 'SELECTED_OUTPUT'
         write (11,*) tab, '-simulation false'
         write (11,*) tab, '-state false'
