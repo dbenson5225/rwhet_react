@@ -36,7 +36,7 @@ module ADRE_mod
         open (unit=11, file='dolomite_chem.in', action='write')
         write (11, *) '# Brine-CO2-Calcite-Quartz system'
         write (11, *) 'SOLUTION 0 Brine'
-        write (11, *) tab, 'pH 3.5'
+        write (11, *) tab, 'pH 7.0'
         write (11, *) tab, 'units mol/L'
         write (11, *) tab, 'temp 60.000000'
         write (11, *) tab, 'pressure 98.6923 atm' ! = 100 bar
@@ -45,7 +45,7 @@ module ADRE_mod
         write (11, '(A, A, f8.6)') tab, 'Ca ', ca_in
         write (11, '(A, A, f8.6, A)') tab, 'Cl ', cl_in, ' charge'
         write (11, *) 'EQUILIBRIUM_PHASES 0'
-        write (11, '(A, A, f9.6)') tab, 'CO2(g) 2.5 ', co2_in
+        write (11, '(A, A, f9.6)') tab, 'CO2(g) 2.0 ', co2_in
         write (11,*) 'SAVE solution 0'
         write (11,*) 'END'
         write (11,*) 'SOLUTION 1 Domain'
