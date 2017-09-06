@@ -1,0 +1,11 @@
+#!/bin/bash
+
+make
+cd example_4
+./../rwhet_exe <<!
+example4.dat
+../rw.out
+../part.out
+!
+
+
