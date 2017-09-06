@@ -3,7 +3,7 @@
 make
 # ./adre_exe 2> a.err
 ./adre_exe > a.out 2> a.err
-#python plot_data.py time_concs.txt 0
+python plotting/plot_data.py time_concs.txt 0
 
 # gfortran -c ADRE_mod.f90
 # gfortran -o trans_exe test_trans.f90 ADRE_mod.f90
