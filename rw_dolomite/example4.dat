@@ -2,13 +2,13 @@
 calcite/dolomite dissolution/precipitation
 1
 dolomite.dbg
-31 31 1
-900.0 900.0 20.0
-1 31                     /ixmin,ixmax
-1 31                     /iymin,iymax
+50 1 1
+0.01 0.01 0.01
+1 50                     /ixmin,ixmax
+1 1                     /iymin,iymax
 1 1                      /izmin,izmax
-0 0                      /reflect (1) or absorb (0) BCs at xm,xp
-0 0                      /reflect (1) or absorb (0) BCs at ym,yp
+1 0                      /reflect (1) or absorb (0) BCs at xm,xp
+1 1                      /reflect (1) or absorb (0) BCs at ym,yp
 1 1                      /reflect (1) or absorb (0) BCs at zm,zp
 10000000
 30003 30005
