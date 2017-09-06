@@ -2,3 +2,5 @@
 *.o
 *.out
 *_exe
+time_concs.txt
+*.dbg
