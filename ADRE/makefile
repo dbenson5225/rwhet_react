@@ -20,4 +20,4 @@ adre_exe: $(adre_files)
 	$(FC90) $(adre_files) -o $@ -L/usr/local/lib -lphreeqcrm
 
 clean: 
-	rm *_exe *.mod *.o *.out
+	rm *_exe *.mod *.o *.out dolomite_chem.in 
