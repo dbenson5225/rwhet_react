@@ -3,17 +3,27 @@ program particles
     use PhreeqcRM
     implicit none
 
-! ======== Parameters ========
+! ======== Simulation Parameters ========
+! double precision, parameter :: maxtime = 60e3 ! 1000 MIN
+! integer, parameter          :: maxtime = 15e3 ! 250 MIN
+integer, parameter          :: maxtime = 1e3 ! less, for testing
+double precision, parameter :: dt = 1e0
 integer, parameter          :: npart = 1e4 ! number of particles
+integer, parameter          :: nsteps = nint(maxtime/dt)
+double precision, parameter :: save_dt = dt * 100.0d0
+integer, parameter          :: save_steps = nint(maxtime/(save_dt)) + 1
+
+! ======== Physical Parameters ========
 integer, parameter          :: omega = 0.5 ! domain size
 double precision, parameter :: darvel = 1.2e-5 ! Darcy velocity [m/s]
 double precision, parameter :: init_porosity = 0.5
 double precision, parameter :: init_v = darvel/init_porosity
 double precision, parameter :: alpha_l = 0.005 ! longitudinal dispersivity
 double precision, parameter :: init_D = alpha_l*init_v
-double precision            :: v(ntrans - 1) = init_v, D(ntrans - 1) = init_D ! vectors for v and D
+! vectors for v and D
+double precision            :: v(ntrans - 1) = init_v, D(ntrans - 1) = init_D
 
-! ======== general variables ========
+! ======== General Variables ========
 double precision                   :: init_calcite, na_inflow, mg_inflow,&
                                            ca_inflow, cl_inflow, co2_inflow,&
                                            dolomite_inflow, quartz_inflow
