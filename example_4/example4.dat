@@ -1,0 +1,23 @@
+example 4 from mt3d manual
+injection and extraction
+1
+example4.dbg
+31 31 1
+900.0 900.0 20.0
+1 31                     /ixmin,ixmax
+1 31                     /iymin,iymax
+1 1                      /izmin,izmax
+0 0                      /reflect (1) or absorb (0) BCs at xm,xp
+0 0                      /reflect (1) or absorb (0) BCs at ym,yp
+1 1                      /reflect (1) or absorb (0) BCs at zm,zp
+10000000
+30003 30005
+0 1.0                /interp, bke(1=forward, -1=backward)
+0.1 100              /ccon_min, ip_res_min
+3650.0 3650.0 0.0 1
+example4.opc
+example4.par
+example4.vlc
+example4.bnd
+example4.pnt
+example4.sam

@@ -1,11 +1,17 @@
 #!/bin/bash
 
+# make
+# cd rw_dolomite
+# ./../rwhet_exe <<!
+# dolomite.dat
+# ../rw.out
+# ../part.out
+# !
+
 make
-cd rw_dolomite
+cd example_4
 ./../rwhet_exe <<!
-dolomite.dat
+example4.dat
 ../rw.out
 ../part.out
 !
-
-
