@@ -3,7 +3,7 @@
 make
 cd rw_dolomite
 ./../rwhet_exe <<!
-example4.dat
+dolomite.dat
 ../rw.out
 ../part.out
 !
