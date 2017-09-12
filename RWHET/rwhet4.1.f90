@@ -3773,6 +3773,7 @@ do
      exit
   endif
 enddo
+print *, 'x vel =  ', vel3(1,1:10,1,1)
 !.....some additional error checking
 if((checkx.eq.0.and.mx.eq.1).or.(checky.eq.0.and.my.eq.1).or.(checkz.eq.0.and.mz.eq.1))then
   write(*,2003)

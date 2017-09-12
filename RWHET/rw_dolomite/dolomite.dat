@@ -1,10 +1,10 @@
 1D high temp/pressure co2 injection
 calcite/dolomite dissolution/precipitation
-1
+0
 dolomite.dbg
-50 1 1
-0.01 0.01 0.01
-1 50                     /ixmin,ixmax
+1000 1 1
+0.0005 1 1
+1 1000                     /ixmin,ixmax
 1 1                     /iymin,iymax
 1 1                      /izmin,izmax
 0 0                      /reflect (1) or absorb (0) BCs at xm,xp
@@ -12,12 +12,12 @@ dolomite.dbg
 1 1                      /reflect (1) or absorb (0) BCs at zm,zp
 10000000
 30003 30005
-0 1.0                /interp, bke(1=forward, -1=backward)
-0.1 100              /ccon_min, ip_res_min
-3650.0 3650.0 0.0 1
-example4.opc
-example4.par
-example4.vlc
-example4.bnd
-example4.pnt
-example4.sam
+1 1.0                /interp, bke(1=forward, -1=backward)
+0.01 1              /ccon_min, ip_res_min
+5000.0 5000.0 0.0 1
+dolomite.opc
+dolomite.par
+dolomite.vlc
+dolomite.bnd
+dolomite.pnt
+dolomite.sam

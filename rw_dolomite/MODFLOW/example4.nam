@@ -1,8 +1,0 @@
-LIST 7 example4.lst
-BAS 1  example4.bas
-BCF 11 example4.bcf
-WEL 12 example4.wel
-SIP 19 example4.sip
-OC 22  example4.oc
-DATA(BINARY) 50 example4.ufm
-

@@ -10,4 +10,4 @@ rwhet_exe: $(rwhet_files)
 	$(FC90) $(rwhet_files) -o $@
 
 clean: 
-	rm *_exe *.mod *.o *.out *.err
+	rm *_exe *.mod *.o *.err

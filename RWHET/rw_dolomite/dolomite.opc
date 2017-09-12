@@ -5,5 +5,6 @@ example4.bth
 example4.prt
 example4.int
 example4.mon
-            .00 1 2 0 0 0 0 0
-        5000.00 1 2 0 0 0 0 0
+            .00 0 2 0 0 0 0 0
+            5.0 0 2 0 0 0 0 0
+        5000.00 0 2 0 0 0 0 0
