@@ -1,4 +1,4 @@
-0.0 1 1 1 -1 "MODFLOW/dolomite.cbb" /time,time step, stress per, reverse z, stream lines, vmin, file name
+0.0 1 1 1 -1 "MODFLOW/dolomite.cbb" /time to read next vel file, MODFLOW time step, MODFLOW stress per, reverse z, file name
 
 
 

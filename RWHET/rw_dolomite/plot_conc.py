@@ -3,7 +3,6 @@ from scipy.io import FortranFile
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-# n = 1
 n = 6
 time = np.zeros(n)
 

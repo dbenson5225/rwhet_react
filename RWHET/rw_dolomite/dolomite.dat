@@ -7,10 +7,10 @@ dolomite.dbg
 1 1000                     /ixmin,ixmax
 1 1                     /iymin,iymax
 1 1                      /izmin,izmax
-0 0                      /reflect (1) or absorb (0) BCs at xm,xp
+1 1                      /reflect (1) or absorb (0) BCs at xm,xp
 1 1                      /reflect (1) or absorb (0) BCs at ym,yp
 1 1                      /reflect (1) or absorb (0) BCs at zm,zp
-10000000
+100000
 30003 30005
 1 1.0                /interp, bke(1=forward, -1=backward)
 0.01 1              /ccon_min, ip_res_min

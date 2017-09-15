@@ -4,3 +4,16 @@
 *_exe
 time_concs.txt
 *.dbg
+a.err
+dolomite_chem.in
+myrun*
+myrun.log.txt
+*.bth
+*.cnf
+*.con
+*.int
+*.mdt
+*.mom
+*.mon
+*.monm
+*.prt
