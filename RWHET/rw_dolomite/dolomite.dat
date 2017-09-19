@@ -12,9 +12,9 @@ dolomite.dbg
 1 1                      /reflect (1) or absorb (0) BCs at zm,zp
 100000
 30003 30005
-1 1.0                /interp, bke(1=forward, -1=backward)
-0.01 1              /ccon_min, ip_res_min
-5000.0 5000.0 0.0 1
+0 1.0                /interp, bke(1=forward, -1=backward)
+0.0000001 1              /ccon_min, ip_res_min
+1000.0 100.0 0.0 1
 dolomite.opc
 dolomite.par
 dolomite.vlc

@@ -1198,7 +1198,7 @@ do
      print*,' Moniotring point not in domain'
      stop
     endif
-    kx=ifix(x/dx); ky=ifix(y/dy); kzbotm=ifix(zbot/dz)
+    kx=int(x/dx); ky=int(y/dy); kzbotm=int(zbot/dz)
     i=kx+1; j=ky+1; kzbot=kzbotm+1
     xm=kx*dx; ym=ky*dy; zm=kzbotm*dz; xp=xm+dx; yp=ym+dy; zp=zm+dz
     area=3.141529*radius*radius
@@ -2278,7 +2278,7 @@ do ip=1,npart
 !
   do ! loop until flow is positive
     x=xm+sx*randu01(); y=ym+sy*randu01() !; z=zm+sz*randu01()
-    kx=ifix(x/dx); ky=ifix(y/dy) !; kz=ifix(z/dz)
+    kx=int(x/dx); ky=int(y/dy) !; kz=int(z/dz)
 ! determine kz and z from recharge array
     if(rech(kx+1,ky+1)%flow.gt.0.0)exit ! when we have found a positive flow region      
   enddo
@@ -2382,7 +2382,7 @@ do ip=ip0,ipn
 !...stream returns new cell location, 
 !...compute new cell location only if reflected
     if(x.ne.xold.or.y.ne.yold.or.z.ne.zold)then
-      kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
+      kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
       i=kx+1; j=ky+1; k=kz+1
       xm=kx*dx; ym=ky*dy; zm=kz*dz; xp=xm+dx; yp=ym+dy; zp=zm+dz
       call icell_correct(kx,ky,kz,i,j,k,x,y,z,xm,ym,zm,xp,yp,zp,vel3)
@@ -2449,29 +2449,35 @@ do ip=ip0,ipn
     sqrtretth=sqrt(ret4*th4)
 !...time-step control
     if(dtcntrl.ne.0.)then
-      ii=mx*(mod(ifix(x/dx2),2)-min(kx,1))
-      jj=my*(mod(ifix(y/dy2),2)-min(ky,1))
-      kk=mz*(mod(ifix(z/dz2),2)-min(kz,1))
+      ii=mx*(mod(int(x/dx2),2)-min(kx,1))
+      jj=my*(mod(int(y/dy2),2)-min(ky,1))
+      kk=mz*(mod(int(z/dz2),2)-min(kz,1))
       dtmin=min(large,cat(i+ii,j+jj,k+kk)%tc,sngl(timeleft)) 
+      print *, 'dtmin case 1 = ', dtmin
     else
       dtmin=dtcurrent
+      print *, 'dtmin case 2 = ', dtmin
     endif
 !...streamlines
     call stream(vel3,x,y,z,retth,kx,ky,kz,i,j,k,dtmin,xstream,ystream,zstream)
+    print *, 'dtmin post-stream = ', dtmin
     totaltime=totaltime+dble(dtmin)
     timeleft=dble(dtcurrent)-totaltime
 !...diagonal-tensor displacement
     ratv4d=sqrt(at*v4/retth+diff)
     r2dt=sqrt(2.0*dtmin)
     ratv4dr2dt=ratv4d*r2dt
+    print *, 'ratv4dr2dt = ', ratv4dr2dt
     xt=pat(1,ip)%xyz(1)+mx*ratv4dr2dt*w1
     yt=pat(1,ip)%xyz(2)+my*ratv4dr2dt*w2
     zt=pat(1,ip)%xyz(3)+mz*ratv4dr2dt*w3
+    print *, 'zt = ', zt
 !...reflect particles at boundaries as needed or tag to remove
     call reflect(sngl(timeleft),pat,cat,xt,yt,zt,ip)     
     if(.not.pat(1,ip)%active)exit
 !...compute new cell location from xt,yt,zt 
-    kxt=ifix(xt/dx); kyt=ifix(yt/dy); kzt=ifix(zt/dz)
+    kxt=int(xt/dx); kyt=int(yt/dy); kzt=int(zt/dz)
+    print *, 'kzt = ', kzt
     it=kxt+1; jt=kyt+1; kt=kzt+1
 !...interpolate velocity
     vx4t=vel3(1,kxt,jt,kt)+(vel3(1,it,jt,kt)-vel3(1,kxt,jt,kt))*(xt/dx-float(kxt))
@@ -2494,7 +2500,7 @@ do ip=ip0,ipn
     call reflect(sngl(timeleft),pat,cat,x,y,z,ip)
     if(.not.pat(1,ip)%active)exit
 !...compute cell location
-    kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
+    kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
     i=kx+1; j=ky+1; k=kz+1
     xd=x-xo;yd=y-yo;zd=z-zo
 !    if(dtmin.lt.near)then   
@@ -2572,7 +2578,7 @@ do ip=ip0,ipn
 !...we use these indices to find in which corner the particle is located, e.g.,
 !...ii=1 if the partcle is located in the second half of the cell in the x direction
 !...ii=0 if "                            " first half "                          "
-    ii=mod(ifix(x/dx2),2); jj=mod(ifix(y/dy2),2); kk=mod(ifix(z/dz2),2)
+    ii=mod(int(x/dx2),2); jj=mod(int(y/dy2),2); kk=mod(int(z/dz2),2)
 !...get parameters from eight cells surrounding corner where partice is located
     iii=i+ii; jjj=j+jj; kkk=k+kk
     ith=1
@@ -2732,7 +2738,7 @@ do ip=ip0,ipn
     call reflect(sngl(timeleft),pat,cat,x,y,z,ip)
     if(.not.pat(1,ip)%active)exit
 !...compute cell location
-    kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
+    kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
     i=kx+1; j=ky+1; k=kz+1
     xd=x-xo;yd=y-yo;zd=z-zo
 !    if(dtmin.lt.near)then   
@@ -2861,7 +2867,7 @@ do ip=ip0,ipn
 !...ii=1 if the partcle is located in the second half of the cell in the x direction
 !...=0 if "                            " first half "                          "
 ! print *, '**** 2863 ****'
-    ii=mod(ifix(x/dx2),2); jj=mod(ifix(y/dy2),2); kk=mod(ifix(z/dz2),2)
+    ii=mod(int(x/dx2),2); jj=mod(int(y/dy2),2); kk=mod(int(z/dz2),2)
 !...get parameters from eight cells surrounding corner where partice is located
     iii=i+ii; jjj=j+jj; kkk=k+kk
     ith=1
@@ -3081,7 +3087,7 @@ do ip=ip0,ipn
     call reflect(sngl(timeleft),pat,cat,x,y,z,ip)
     if(.not.pat(1,ip)%active)exit
 !...compute cell location
-    kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
+    kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
     i=kx+1; j=ky+1; k=kz+1
     xd=x-xo;yd=y-yo;zd=z-zo
 !    if(dtmin.lt.near)then   
@@ -3331,11 +3337,13 @@ intent(out):: xstream,ystream,zstream
 intent(inout):: i,j,k,kx,ky,kz,dtmin
 !
 tstep=dtmin
+print *, 'dtmin top stream = ', dtmin
 dxstream=x; dystream=y; dzstream=z
 ixend=0; iyend=0; izend=0
 ! compute new location dxstream,dystream,dzstream
 ! if particle hits edge of cell, time step tstep is returned as time to edge
 if(mx.eq.1)then
+    print *, 'case 1-1'
   ix=0
   vxm=bke*vel3(1,kx,j,k)/retth; vxp=bke*vel3(1,i,j,k)/retth
   xm=kx*dx; xp=xm+dx
@@ -3344,8 +3352,10 @@ if(mx.eq.1)then
   xx=x
   call xyzstream1(dxstream,xx,ddx,xm,xp,xxm,kx,nx,&
   vxm,vxp,tstep,sx,ixend,ix,1)
+  print *, 'tstep end case = ', tstep
 endif
 if(my.eq.1)then
+    print *, 'case 1-2'
   iy=0
   vym=bke*vel3(2,i,ky,k)/retth; vyp=bke*vel3(2,i,j,k)/retth
   ym=ky*dy; yp=ym+dy
@@ -3354,8 +3364,10 @@ if(my.eq.1)then
   yy=y
   call xyzstream1(dystream,yy,ddy,ym,yp,yym,ky,ny,&
   vym,vyp,tstep,sy,iyend,iy,2)
+  print *, 'tstep in case = ', tstep
 endif
 if(mz.eq.1)then
+    print *, 'case 1-3'
   iz=0
   vzm=bke*vel3(3,i,j,kz)/retth; vzp=bke*vel3(3,i,j,k)/retth
   zm=kz*dz; zp=zm+dz
@@ -3364,27 +3376,36 @@ if(mz.eq.1)then
   zz=z
   call xyzstream1(dzstream,zz,ddz,zm,zp,zzm,kz,nz,&
   vzm,vzp,tstep,sz,izend,iz,3)
+  print *, 'tstep in case = ', tstep
 endif
 !
 ! if particle hit edge of cell recalculate position for modefied tstep
 !
 ! if it passed the z face, recompute the x and y locations, and new cell
 if(izend.ne.0)then
+    print *, 'case 2-1'
   k=k+iz
   kz=k-1
   if(mx.eq.1)dxstream=xyzstream2(xx,xm,xxm,vxm,tstep,sx)
   if(my.eq.1)dystream=xyzstream2(yy,ym,yym,vym,tstep,sy)
 ! if it hit the y face, recompute the x location and new cell
+print *, 'tstep in case = ', tstep
 elseif(iyend.ne.0)then
+    print *, 'case 2-2'
   j=j+iy
   ky=j-1
   if(mx.eq.1)dxstream=xyzstream2(xx,xm,xxm,vxm,tstep,sx)
 ! if it hit the x face, recompute new cell
+print *, 'tstep in case = ', tstep
 elseif(ixend.ne.0)then
+    print *, 'case 2-3'
   i=i+ix
   kx=i-1
+  print *, 'tstep in case = ', tstep
 endif
+print *, 'dtmin after logic block = ', dtmin
 dtmin=tstep
+print *, 'dtmin from tstep = ', dtmin
 xstream=dxstream
 ystream=dystream
 zstream=dzstream
@@ -3400,9 +3421,11 @@ double precision:: sx,tstep,dxstream,xyzstream2
 intent(in):: xxm,dx,xm,xp,kx,nx,vxm,vxp,idir
 intent(out):: dxstream,sx
 intent(inout):: tstep,ixend,ix,x
-sx=(vxp-vxm)/dx      
+sx=(vxp-vxm)/dx
+print *, 'tstep 3425 = ', tstep
 ! compute location
 dxstream=xyzstream2(x,xm,xxm,vxm,tstep,sx)
+print *, 'tstep 3428 = ', tstep
 ! if particle hit edge, compute time to edge
 if(dxstream.gt.xp.and.vxp.gt.0.0)then
   ixend=1
@@ -3413,20 +3436,26 @@ if(dxstream.gt.xp.and.vxp.gt.0.0)then
 ! outside of the domain, where it is either absorbed or reflected.
   if(kx+1.ne.nx)ix=1
   if(sx.ne.0.0)then
-    tstep=dlog((sx*dx+vxm)/(sx*xxm+vxm))/sx
+    tstep=log((sx*dx+vxm)/(sx*xxm+vxm))/sx
+    print *, 'tstep 3440 = ', tstep
   else
+! ***** here is where it goes negative ****
     tstep=(xp-x)/vxm
+    print *, 'tstep 3443 = ', tstep
   endif
 elseif(dxstream.lt.xm.and.vxm.lt.0.0)then
   ixend=1
   dxstream=(xm)
   if(kx.ne.0)ix=-1
   if(sx.ne.0.0)then
-    tstep=dlog(vxm/(sx*xxm+vxm))/sx
+    tstep=log(vxm/(sx*xxm+vxm))/sx
+    print *, 'tstep 3451 = ', tstep
   else
     tstep=-xxm/vxm
+    print *, 'tstep 3454 = ', tstep
   endif
 endif
+print *, 'tstep 3457 = ', tstep
 return
 end
 !------------------------------------------------------------
@@ -4222,7 +4251,7 @@ do ipntsrc=1,npntsrc
      y.lt.0.0.or.y.gt.ny*dy.or.&
      z.lt.0.0.or.z.gt.nz*dz)goto 9998
 !.compute cell from x,y,z
-  kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
+  kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
   i=kx+1; j=ky+1; k=kz+1
   xm=kx*dx; ym=ky*dy; zm=kz*dz; xp=xm+dx; yp=ym+dy; zp=zm+dz
   call icell_correct(kx,ky,kz,i,j,k,x,y,z,xm,ym,zm,xp,yp,zp,vel3)
@@ -4361,7 +4390,7 @@ do ip=1,npart
       stop    ' error:too many particles, increase maxnp'
     endif
     x=xm+sx*randu01(); y=ym+sy*randu01(); z=zm+sz*randu01()
-    kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
+    kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
     if(kx.lt.0.or.ky.lt.0.or.kz.lt.0.or.kx.gt.nx-1.or.ky.gt.ny-1.or.kz.gt.nz-1)then
       ierr=-1
       return
@@ -4384,9 +4413,9 @@ real:: vel3(3,0:nx,0:ny,0:nz),sx,sy,sz,xm,ym,zm,qtotal,q,r,randu01,sznew,zmnew,x
 real, allocatable:: probw(:)
 double precision pmass
 integer:: iw,nw,kxm,im,kym,jm,kzm,km,i,j,k,kxp,kyp,kzp,ip,kp,kx,ky,kz,npart,iptype
-kxm=ifix(xm/dx); kym=ifix(ym/dy); kzm=ifix(zm/dz)
+kxm=int(xm/dx); kym=int(ym/dy); kzm=int(zm/dz)
 im=kxm+1; jm=kym+1; km=kzm+1
-kxp=ifix((xm+sx)/dx); kyp=ifix((ym+sy)/dy); kzp=ifix((zm+sz)/dz)
+kxp=int((xm+sx)/dx); kyp=int((ym+sy)/dy); kzp=int((zm+sz)/dz)
 kp=kzp+1
 nw=kp-km+1
 allocate(probw(nw))
@@ -4423,7 +4452,7 @@ do ip=1,npart
       stop    ' error:too many particles, increase maxnp'
     endif
     x=xm+sx*randu01(); y=ym+sy*randu01(); z=zmnew+sznew*randu01()
-    kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
+    kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
     call addp(time,x,y,z,kx+1,ky+1,kz+1,pmass,pat,cat)
 enddo
 return
@@ -4891,7 +4920,7 @@ do isam=1,nsam
       zdiff=abs(pat(1,ip)%xyz(3)-(sam(isam)%xyz(3)+sam(isam)%xyz(4))/2.0)
       thick=(sam(isam)%xyz(4)-sam(isam)%xyz(3))/2.0
       if(dxy.le.sam(isam)%radius.and.zdiff.le.thick)then
-        kx=ifix(pat(1,ip)%xyz(1)/dx); ky=ifix(pat(1,ip)%xyz(2)/dy); kz=ifix(pat(1,ip)%xyz(3)/dz)
+        kx=int(pat(1,ip)%xyz(1)/dx); ky=int(pat(1,ip)%xyz(2)/dy); kz=int(pat(1,ip)%xyz(3)/dz)
         i=kx+1; j=ky+1; k=kz+1
         do izone=1,sam(isam)%nzone
           if(cat(i,j,k)%zone.eq.sam(isam)%zone(izone))then
@@ -5038,7 +5067,7 @@ do isam=1,nsam
     endif
   elseif(sam(isam)%itype.eq.5)then 
     do ip=1,np
-      kx=ifix(pat(1,ip)%xyz(1)/dx); ky=ifix(pat(1,ip)%xyz(2)/dy); kz=ifix(pat(1,ip)%xyz(3)/dz)
+      kx=int(pat(1,ip)%xyz(1)/dx); ky=int(pat(1,ip)%xyz(2)/dy); kz=int(pat(1,ip)%xyz(3)/dz)
       i=kx+1; j=ky+1; k=kz+1
       if(i.eq.sam(isam)%ijk(1).and.j.eq.sam(isam)%ijk(2).and.&
         (k.ge.sam(isam)%ijk(3).and.k.le.sam(isam)%ijk(4)))then
