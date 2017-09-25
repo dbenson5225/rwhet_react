@@ -3422,11 +3422,14 @@ intent(in):: xxm,dx,xm,xp,kx,nx,vxm,vxp,idir
 intent(out):: dxstream,sx
 intent(inout):: tstep,ixend,ix,x
 sx=(vxp-vxm)/dx
+print *, 'sx, vxp, vxm, dx = ', sx, vxp, vxm, dx
 print *, 'tstep 3425 = ', tstep
 ! compute location
 dxstream=xyzstream2(x,xm,xxm,vxm,tstep,sx)
 print *, 'tstep 3428 = ', tstep
 ! if particle hit edge, compute time to edge
+print *, 'dxstream > xp, vxp > 0.0 = ', dxstream, xp, vxp
+print *, 'dxstream < xm, vxm < 0.0 = ', dxstream, xp, vxp
 if(dxstream.gt.xp.and.vxp.gt.0.0)then
   ixend=1
   dxstream=xp

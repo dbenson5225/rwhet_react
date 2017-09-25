@@ -8,6 +8,7 @@ dolomite.dat
 ../rw.out
 ../part.out
 !
+tail -n 20 output.out
 
 # make
 # cd example_4
