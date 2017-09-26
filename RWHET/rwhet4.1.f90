@@ -2453,31 +2453,31 @@ do ip=ip0,ipn
       jj=my*(mod(int(y/dy2),2)-min(ky,1))
       kk=mz*(mod(int(z/dz2),2)-min(kz,1))
       dtmin=min(large,cat(i+ii,j+jj,k+kk)%tc,sngl(timeleft)) 
-      print *, 'dtmin case 1 = ', dtmin
+      ! print *, 'dtmin case 1 = ', dtmin
     else
       dtmin=dtcurrent
-      print *, 'dtmin case 2 = ', dtmin
+      ! print *, 'dtmin case 2 = ', dtmin
     endif
 !...streamlines
     call stream(vel3,x,y,z,retth,kx,ky,kz,i,j,k,dtmin,xstream,ystream,zstream)
-    print *, 'dtmin post-stream = ', dtmin
+    ! print *, 'dtmin post-stream = ', dtmin
     totaltime=totaltime+dble(dtmin)
     timeleft=dble(dtcurrent)-totaltime
 !...diagonal-tensor displacement
     ratv4d=sqrt(at*v4/retth+diff)
     r2dt=sqrt(2.0*dtmin)
     ratv4dr2dt=ratv4d*r2dt
-    print *, 'ratv4dr2dt = ', ratv4dr2dt
+    ! print *, 'ratv4dr2dt = ', ratv4dr2dt
     xt=pat(1,ip)%xyz(1)+mx*ratv4dr2dt*w1
     yt=pat(1,ip)%xyz(2)+my*ratv4dr2dt*w2
     zt=pat(1,ip)%xyz(3)+mz*ratv4dr2dt*w3
-    print *, 'zt = ', zt
+    ! print *, 'zt = ', zt
 !...reflect particles at boundaries as needed or tag to remove
     call reflect(sngl(timeleft),pat,cat,xt,yt,zt,ip)     
     if(.not.pat(1,ip)%active)exit
 !...compute new cell location from xt,yt,zt 
     kxt=int(xt/dx); kyt=int(yt/dy); kzt=int(zt/dz)
-    print *, 'kzt = ', kzt
+    ! print *, 'kzt = ', kzt
     it=kxt+1; jt=kyt+1; kt=kzt+1
 !...interpolate velocity
     vx4t=vel3(1,kxt,jt,kt)+(vel3(1,it,jt,kt)-vel3(1,kxt,jt,kt))*(xt/dx-float(kxt))
@@ -3277,7 +3277,7 @@ do ip=1,np
           pat(1,ip)%pmass=pmass
           time=pat(1,ip)%birth_day
           do isplit=1,nsplit-1
-            print *, '**** calling addp ****'
+            ! print *, '**** calling addp ****'
             call addp(time,x,y,z,i,j,k,pmass,pat,cat)
 !...........assign birth date for split particle to that of parent                    
             pat(1,np)%birth_day=pat(1,ip)%birth_day
@@ -3337,13 +3337,13 @@ intent(out):: xstream,ystream,zstream
 intent(inout):: i,j,k,kx,ky,kz,dtmin
 !
 tstep=dtmin
-print *, 'dtmin top stream = ', dtmin
+! print *, 'dtmin top stream = ', dtmin
 dxstream=x; dystream=y; dzstream=z
 ixend=0; iyend=0; izend=0
 ! compute new location dxstream,dystream,dzstream
 ! if particle hits edge of cell, time step tstep is returned as time to edge
 if(mx.eq.1)then
-    print *, 'case 1-1'
+    ! print *, 'case 1-1'
   ix=0
   vxm=bke*vel3(1,kx,j,k)/retth; vxp=bke*vel3(1,i,j,k)/retth
   xm=kx*dx; xp=xm+dx
@@ -3352,10 +3352,10 @@ if(mx.eq.1)then
   xx=x
   call xyzstream1(dxstream,xx,ddx,xm,xp,xxm,kx,nx,&
   vxm,vxp,tstep,sx,ixend,ix,1)
-  print *, 'tstep end case = ', tstep
+  ! print *, 'tstep end case = ', tstep
 endif
 if(my.eq.1)then
-    print *, 'case 1-2'
+    ! print *, 'case 1-2'
   iy=0
   vym=bke*vel3(2,i,ky,k)/retth; vyp=bke*vel3(2,i,j,k)/retth
   ym=ky*dy; yp=ym+dy
@@ -3364,10 +3364,10 @@ if(my.eq.1)then
   yy=y
   call xyzstream1(dystream,yy,ddy,ym,yp,yym,ky,ny,&
   vym,vyp,tstep,sy,iyend,iy,2)
-  print *, 'tstep in case = ', tstep
+  ! print *, 'tstep in case = ', tstep
 endif
 if(mz.eq.1)then
-    print *, 'case 1-3'
+    ! print *, 'case 1-3'
   iz=0
   vzm=bke*vel3(3,i,j,kz)/retth; vzp=bke*vel3(3,i,j,k)/retth
   zm=kz*dz; zp=zm+dz
@@ -3376,36 +3376,36 @@ if(mz.eq.1)then
   zz=z
   call xyzstream1(dzstream,zz,ddz,zm,zp,zzm,kz,nz,&
   vzm,vzp,tstep,sz,izend,iz,3)
-  print *, 'tstep in case = ', tstep
+  ! print *, 'tstep in case = ', tstep
 endif
 !
 ! if particle hit edge of cell recalculate position for modefied tstep
 !
 ! if it passed the z face, recompute the x and y locations, and new cell
 if(izend.ne.0)then
-    print *, 'case 2-1'
+    ! print *, 'case 2-1'
   k=k+iz
   kz=k-1
   if(mx.eq.1)dxstream=xyzstream2(xx,xm,xxm,vxm,tstep,sx)
   if(my.eq.1)dystream=xyzstream2(yy,ym,yym,vym,tstep,sy)
 ! if it hit the y face, recompute the x location and new cell
-print *, 'tstep in case = ', tstep
+! print *, 'tstep in case = ', tstep
 elseif(iyend.ne.0)then
-    print *, 'case 2-2'
+    ! print *, 'case 2-2'
   j=j+iy
   ky=j-1
   if(mx.eq.1)dxstream=xyzstream2(xx,xm,xxm,vxm,tstep,sx)
 ! if it hit the x face, recompute new cell
-print *, 'tstep in case = ', tstep
+! print *, 'tstep in case = ', tstep
 elseif(ixend.ne.0)then
-    print *, 'case 2-3'
+    ! print *, 'case 2-3'
   i=i+ix
   kx=i-1
-  print *, 'tstep in case = ', tstep
+  ! print *, 'tstep in case = ', tstep
 endif
-print *, 'dtmin after logic block = ', dtmin
+! print *, 'dtmin after logic block = ', dtmin
 dtmin=tstep
-print *, 'dtmin from tstep = ', dtmin
+! print *, 'dtmin from tstep = ', dtmin
 xstream=dxstream
 ystream=dystream
 zstream=dzstream
@@ -3422,14 +3422,14 @@ intent(in):: xxm,dx,xm,xp,kx,nx,vxm,vxp,idir
 intent(out):: dxstream,sx
 intent(inout):: tstep,ixend,ix,x
 sx=(vxp-vxm)/dx
-print *, 'sx, vxp, vxm, dx = ', sx, vxp, vxm, dx
-print *, 'tstep 3425 = ', tstep
+! print *, 'sx, vxp, vxm, dx = ', sx, vxp, vxm, dx
+! print *, 'tstep 3425 = ', tstep
 ! compute location
 dxstream=xyzstream2(x,xm,xxm,vxm,tstep,sx)
-print *, 'tstep 3428 = ', tstep
+! print *, 'tstep 3428 = ', tstep
 ! if particle hit edge, compute time to edge
-print *, 'dxstream > xp, vxp > 0.0 = ', dxstream, xp, vxp
-print *, 'dxstream < xm, vxm < 0.0 = ', dxstream, xp, vxp
+! print *, 'dxstream > xp, vxp > 0.0 = ', dxstream, xp, vxp
+! print *, 'dxstream < xm, vxm < 0.0 = ', dxstream, xp, vxp
 if(dxstream.gt.xp.and.vxp.gt.0.0)then
   ixend=1
   dxstream=xp
@@ -3440,11 +3440,11 @@ if(dxstream.gt.xp.and.vxp.gt.0.0)then
   if(kx+1.ne.nx)ix=1
   if(sx.ne.0.0)then
     tstep=log((sx*dx+vxm)/(sx*xxm+vxm))/sx
-    print *, 'tstep 3440 = ', tstep
+    ! print *, 'tstep 3440 = ', tstep
   else
 ! ***** here is where it goes negative ****
     tstep=(xp-x)/vxm
-    print *, 'tstep 3443 = ', tstep
+    ! print *, 'tstep 3443 = ', tstep
   endif
 elseif(dxstream.lt.xm.and.vxm.lt.0.0)then
   ixend=1
@@ -3452,13 +3452,13 @@ elseif(dxstream.lt.xm.and.vxm.lt.0.0)then
   if(kx.ne.0)ix=-1
   if(sx.ne.0.0)then
     tstep=log(vxm/(sx*xxm+vxm))/sx
-    print *, 'tstep 3451 = ', tstep
+    ! print *, 'tstep 3451 = ', tstep
   else
     tstep=-xxm/vxm
-    print *, 'tstep 3454 = ', tstep
+    ! print *, 'tstep 3454 = ', tstep
   endif
 endif
-print *, 'tstep 3457 = ', tstep
+! print *, 'tstep 3457 = ', tstep
 return
 end
 !------------------------------------------------------------
@@ -3842,7 +3842,7 @@ do
      exit
   endif
 enddo
-print *, 'x vel =  ', vel3(1,1:10,1,1)
+! print *, 'x vel =  ', vel3(1,1:10,1,1)
 !.....some additional error checking
 if((checkx.eq.0.and.mx.eq.1).or.(checky.eq.0.and.my.eq.1).or.(checkz.eq.0.and.mz.eq.1))then
   write(*,2003)
