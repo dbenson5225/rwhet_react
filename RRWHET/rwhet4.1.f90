@@ -3160,7 +3160,7 @@ do k=1,nz; do j=1,ny; do i=1,nx
   enddo; enddo; enddo
 ! minimum cell size
   rmindxyz2=min(rmx*dx*dx,rmy*dy*dy,rmz*dz*dz)
-  dtmin=sngl(dtinit)
+  dtmin=real(dtinit)
   if(diffxyz.ne.0.0)then
     cat(i,j,k)%tc=min(dtmin,dtcntrl*rmindxyz2/(48.0*diffxyz))
     if(dtcntrl*rmindxyz2/(48.0*diffxyz).lt.dtminimum)then
