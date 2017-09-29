@@ -2,8 +2,8 @@
 
 make
 cd rw_dolomite
-# ./../rwhet_exe > ../output.out <<!
-./../rwhet_exe <<!
+./../rwhet_exe > ../output.out <<!
+# ./../rwhet_exe <<!
 dolomite.dat
 ../rw.out
 ../part.out
