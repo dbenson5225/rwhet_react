@@ -1,9 +1,11 @@
 import numpy as np
 from scipy.io import FortranFile
+import matplotlib
+# matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-n = 6
+n = 11
 time = np.zeros(n)
 
 f = FortranFile('dolomite.con', 'r')
@@ -23,11 +25,26 @@ for i in range(0, n):
 f.close()
 x = np.linspace(0, 0.5, d1[0][0][0])
 
-plt.figure(1)
-plt.plot(x, mat[n - 1, ])
-plt.show()
+# this is for static plotting
+# plt.figure(1)
+# plt.plot(x, mat[n - 1, ])
+# plt.show()
 
-# plt.draw()
-# plt.pause(1) # <-------
-# raw_input('<Hit Enter To Close>')
-# plt.close(1)
+
+# this is for animation
+fig, ax = plt.subplots()
+line, = ax.plot(x, mat[0, ])
+
+def animate(i):
+    line.set_ydata(mat[i, ])  # update the data
+    return line,
+
+# Init only required for blitting to give a clean slate.
+def init():
+    line.set_ydata(np.ma.array(x, mask=True))
+    ax.set_ylim(0, np.max(mat[1, ]))
+    return line,
+
+ani = animation.FuncAnimation(fig, animate, np.arange(0, n), init_func=init,
+                              interval=200, repeat=False, blit=True)
+plt.show()
