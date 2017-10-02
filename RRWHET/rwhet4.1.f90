@@ -1766,39 +1766,30 @@ dtminimum=dtinit
 write(*,*)'  Current Time   # of Particles '
 write(*,*)' --------------  -------------- '
 do; if(.not.(curtime.lt.tmax))exit
-    ! print *, '**** 1769 ****'
   write(*,'(1x,f15.4,1x,i15,a1,$)')sngl(curtime),np,char(13)
-  ! print *, '**** 1771 ****'
 !.calulate dt based on min. time to update velocity, boundaries, output, or tmax
   dt=dtinit
   dt=min(dt,tnextvel-curtime,tnextbnd-curtime,tnextopc-curtime,&
   tnextpnt-curtime,tnextsrc-curtime,tmax-curtime)
   curtime=curtime+dt
   sngldt=dt
-  ! print *, '**** 1778 ****'
-  !!! ****** this is where it seems to crash *********
 !.move all existing particles up to curtime
   if(ibug.ge.1)then;string(1)=' CALL MOVEP!';call debug(ibugout,string,nline);endif
   call movep(1,np,sngldt,vel3,por,ret,dlong,dtran,ddiff,decay,pat,cat,bounds)  ! full anisotropic displacement
-! print *, '**** 1782 ****'
 !.distribute and move particles from continuous source boundary sources
   if(ibug.ge.1)then;string(1)=' CALL SRC!';call debug(ibugout,string,nline);endif
   call src(movep,cat,pat,rech,chd,vel3,por,ret,dlong,dtran,ddiff,decay,bounds,source,sngldt)
-! print *, '**** 1786 ****'
 !.remove tagged particles that left domain
   if(ibug.ge.1)then;string(1)=' CALL REMOVEP!';call debug(ibugout,string,nline);endif
   call removep(1,pat,cat)
-  ! print *, '**** 1790 ****'
 !.check for mass conservation (particle mass should sum to cell-based mass)
   if(ibug.ge.2)call conserve(pat,cat)
-  ! print *, '**** 1793 ****'
 !.split particles for resolution of concentration field
   if(ibug.ge.1)then;string(1)=' CALL SPLIT!';call debug(ibugout,string,nline);endif
   if(np.ne.0)call split(pat,cat,bounds,por,ret)
 !.update velocities
   tnextvelo=tnextvel
   imawupdt=0
-  ! print *, '**** 1794 ****'
   if(curtime.eq.tnextvel)then
     imawupdt=1
     if(ibug.ge.1)then;string(1)=' CALL VELUPDT!';call debug(ibugout,string,nline);endif
@@ -1809,47 +1800,37 @@ do; if(.not.(curtime.lt.tmax))exit
     write(*,*)' --------------  -------------- '
   endif
 !.update BCs
-! print *, '**** 1806 ****'
   if((curtime.eq.tnextbnd).and.ibug.ge.1)then
     string(1)=' CALL BNDUPT!';call debug(ibugout,string,nline)
   endif
-  ! print *, '**** 1810 ****'
   if(curtime.eq.tnextbnd)call bndupdt(bounds,source,cat,pat)
   if((curtime.eq.tnextbnd.or.curtime.eq.tnextvelo).and.ibug.ge.1)then
     string(1)=' CALL COURANT!';call debug(ibugout,string,nline)
   endif
-  ! print *, '**** 1815 ****'
   if(curtime.eq.tnextbnd.or.curtime.eq.tnextvelo)&   
   call courant(source,bounds,vel3,cat,por)
 !.distribute particles from sources
-! print *, '**** 1819 ****'
   if((curtime.eq.tnextpnt).and.ibug.ge.1)then
     string(1)=' CALL PNTUPDT!';call debug(ibugout,string,nline)
   endif
-  ! print *, '**** 1823 ****'
   if(curtime.eq.tnextpnt)call pntupdt(pat,cat,vel3)
 !.update sources
   if((curtime.eq.tnextsrc).and.ibug.ge.1)then
     string(1)=' CALL SRCUPDT!';call debug(ibugout,string,nline)
   endif
-  ! print *, '**** 1829 ****'
   if(curtime.eq.tnextsrc)call srcupdt(source,bounds,pat,cat)
 !.output results
-! print *, '**** 1832 ****', (curtime.eq.tnextopc).and.ibug.ge.1
   if((curtime.eq.tnextopc).and.ibug.ge.1)then
     string(1)=' CALL OUTPUT!';call debug(ibugout,string,nline)
   endif
-  ! print *, '**** 1836 ****'
   if(curtime.eq.tnextopc)call output(opc,outunit,outfname,sam,pat,cat,vel3,bounds,por,ret,decay)
   if(imawupdt.eq.1)then
     if(ibug.ge.1)then;string(1)=' CALL MAWUPDT!';call debug(ibugout,string,nline);endif
     call mawupdt(bounds,vel3)
   endif
-  ! print *, '**** 1842 ****'
 !.exit if no particles left
   if(np.eq.0)exit
 !.end time loop
-! print *, '**** end of loop ****'
 enddo
 return
 write(*,'(f15.4,f15.4,i10,a1,$)')sngl(curtime),dt,np,char(13)
@@ -2452,32 +2433,26 @@ do ip=ip0,ipn
       ii=mx*(mod(int(x/dx2),2)-min(kx,1))
       jj=my*(mod(int(y/dy2),2)-min(ky,1))
       kk=mz*(mod(int(z/dz2),2)-min(kz,1))
-      dtmin=min(large,cat(i+ii,j+jj,k+kk)%tc,sngl(timeleft)) 
-      ! print *, 'dtmin case 1 = ', dtmin
+      dtmin=min(large,cat(i+ii,j+jj,k+kk)%tc,sngl(timeleft))
     else
       dtmin=dtcurrent
-      ! print *, 'dtmin case 2 = ', dtmin
     endif
 !...streamlines
     call stream(vel3,x,y,z,retth,kx,ky,kz,i,j,k,dtmin,xstream,ystream,zstream)
-    ! print *, 'dtmin post-stream = ', dtmin
     totaltime=totaltime+dble(dtmin)
     timeleft=dble(dtcurrent)-totaltime
 !...diagonal-tensor displacement
     ratv4d=sqrt(at*v4/retth+diff)
     r2dt=sqrt(2.0*dtmin)
     ratv4dr2dt=ratv4d*r2dt
-    ! print *, 'ratv4dr2dt = ', ratv4dr2dt
     xt=pat(1,ip)%xyz(1)+mx*ratv4dr2dt*w1
     yt=pat(1,ip)%xyz(2)+my*ratv4dr2dt*w2
     zt=pat(1,ip)%xyz(3)+mz*ratv4dr2dt*w3
-    ! print *, 'zt = ', zt
 !...reflect particles at boundaries as needed or tag to remove
     call reflect(sngl(timeleft),pat,cat,xt,yt,zt,ip)     
     if(.not.pat(1,ip)%active)exit
 !...compute new cell location from xt,yt,zt 
     kxt=int(xt/dx); kyt=int(yt/dy); kzt=int(zt/dz)
-    ! print *, 'kzt = ', kzt
     it=kxt+1; jt=kyt+1; kt=kzt+1
 !...interpolate velocity
     vx4t=vel3(1,kxt,jt,kt)+(vel3(1,it,jt,kt)-vel3(1,kxt,jt,kt))*(xt/dx-float(kxt))
@@ -2838,9 +2813,7 @@ real:: fyfxn,fy1fxn,fyfx1n,fy1fx1n,fzfyn,fz1fyn,fzfy1n,fz1fy1n
 real:: fynfx,fy1nfx,fynfx1,fy1nfx1,fznfx,fz1nfx,fznfx1,fz1nfx1
 real:: fznfy,fz1nfy,fznfy1,fz1nfy1
 !
-! print *, '**** 2835 ****'
 do ip=ip0,ipn
-    ! print *, '**** 2837 ****'
   if(.not.pat(1,ip)%active)cycle
 !
   al=dlong(cat(1,1,1)%zone)
@@ -2849,11 +2822,8 @@ do ip=ip0,ipn
   alt=al-at
   timeleft=dble(dtcurrent)
   totaltime=0.0
-  ! print *, '**** 2846 ****'
   do; if(.not.sngl(timeleft).gt.0.0)exit
-    ! print *, '**** 2848 ****'
     call random(w1,w2,w3)
-    ! print *, '**** 2850 ****'
 !...particle location
     x=pat(1,ip)%xyz(1); y=pat(1,ip)%xyz(2); z=pat(1,ip)%xyz(3) 
     xo=pat(1,ip)%xyz(1); yo=pat(1,ip)%xyz(2); zo=pat(1,ip)%xyz(3) 
@@ -2866,14 +2836,11 @@ do ip=ip0,ipn
 !...we use these indices to find in which corner the particle is located
 !...ii=1 if the partcle is located in the second half of the cell in the x direction
 !...=0 if "                            " first half "                          "
-! print *, '**** 2863 ****'
     ii=mod(int(x/dx2),2); jj=mod(int(y/dy2),2); kk=mod(int(z/dz2),2)
 !...get parameters from eight cells surrounding corner where partice is located
     iii=i+ii; jjj=j+jj; kkk=k+kk
     ith=1
-    ! print *, '**** 2868 ****'
     do iz=kkk-1,kkk; do iy=jjj-1,jjj; do ix=iii-1,iii
-        ! print *, '**** 2870 ****'
       imm=max(1,min(ix,nx)); jmm=max(1,min(iy,ny)); kmm=max(1,min(iz,nz))
       kmmkk=kmm-kk; jmmjj=jmm-jj; immii=imm-ii
       th(ith)=por(cat(imm,jmm,kmm)%zone)
@@ -2883,7 +2850,6 @@ do ip=ip0,ipn
       vz(ith)=vel3(3,imm,jmm,kmmkk)/por(cat(imm,jmm,k)%zone) 
       ith=ith+1
     enddo; enddo; enddo
-    ! print *, '**** 2880 ****'
 !.........location of lower faces of the cell over which interolation occurs
     x1=float(kx+ii)*dx-dx/2.0; y1=float(ky+jj)*dy-dy/2.0; z1=float(kz+kk)*dz-dz/2.0
     x1n=float(kx)*dx; y1n=float(ky)*dy; z1n=float(kz)*dz
@@ -3104,7 +3070,6 @@ do ip=ip0,ipn
     if(.not.pat(1,ip)%active)exit
   enddo
 enddo
-! print *, '**** end of movep ****'
 return
 end   
 !------------------------------------------------------------
@@ -3246,28 +3211,21 @@ real:: por(nzone),ret(nzone),x,y,z
 real:: time
 double precision:: pmass_old,pmass,pmass_min,cmass,conc
 !
-! print *, '**** in split ****'
 if(nres.le.1)return
-! print *, '**** 3229 ****'
 do ip=1,np
   pmass_old=pat(1,ip)%pmass
   i=pat(1,ip)%ijk(1); j=pat(1,ip)%ijk(2); k=pat(1,ip)%ijk(3)
   pmass_min=cres*por(cat(i,j,k)%zone)*ret(cat(i,j,k)%zone)*vol/float(nres)    ! don't split particles with mass less than pmass_min
-  ! print *, '**** 3234 ****'
   if(pmass_old.ge.pmass_min)then                               ! particles with pmass > pmass_min
     cmass=cat(i,j,k)%cmass                                          ! mass in cell
     conc=cmass/dble(por(cat(i,j,k)%zone)*ret(cat(i,j,k)%zone)*vol)                      ! current concentration
-    ! print *, '**** 3238 ****'
     if(conc.ge.cres)then                                 ! cell mass >= minimum c of interest
       itype=0
       ibounds=cat(i,j,k)%bc_number
-      ! print *, '**** 3242 ****'
       if(ibounds.ne.0)itype=bounds(ibounds)%bc_type
-      ! print *, '**** 3244 ****'
       if(itype.ne.3)then                                       ! particles outside of absorbing boundary type 3
 !........force all particles to a mass resolution (pmass/cmass) of at least 1/nres
         ip_res=nint(cat(i,j,k)%cmass/pmass_old)
-        ! print *, '**** 3248 ****'
         if(ip_res.lt.nres)then
 !.........split particle into enough equal parts to force the above condition false
           nsplit=nres/ip_res+1
@@ -3277,7 +3235,6 @@ do ip=1,np
           pat(1,ip)%pmass=pmass
           time=pat(1,ip)%birth_day
           do isplit=1,nsplit-1
-            ! print *, '**** calling addp ****'
             call addp(time,x,y,z,i,j,k,pmass,pat,cat)
 !...........assign birth date for split particle to that of parent                    
             pat(1,np)%birth_day=pat(1,ip)%birth_day
@@ -3337,13 +3294,11 @@ intent(out):: xstream,ystream,zstream
 intent(inout):: i,j,k,kx,ky,kz,dtmin
 !
 tstep=dtmin
-! print *, 'dtmin top stream = ', dtmin
 dxstream=x; dystream=y; dzstream=z
 ixend=0; iyend=0; izend=0
 ! compute new location dxstream,dystream,dzstream
 ! if particle hits edge of cell, time step tstep is returned as time to edge
 if(mx.eq.1)then
-    ! print *, 'case 1-1'
   ix=0
   vxm=bke*vel3(1,kx,j,k)/retth; vxp=bke*vel3(1,i,j,k)/retth
   xm=kx*dx; xp=xm+dx
@@ -3352,10 +3307,8 @@ if(mx.eq.1)then
   xx=x
   call xyzstream1(dxstream,xx,ddx,xm,xp,xxm,kx,nx,&
   vxm,vxp,tstep,sx,ixend,ix,1)
-  ! print *, 'tstep end case = ', tstep
 endif
 if(my.eq.1)then
-    ! print *, 'case 1-2'
   iy=0
   vym=bke*vel3(2,i,ky,k)/retth; vyp=bke*vel3(2,i,j,k)/retth
   ym=ky*dy; yp=ym+dy
@@ -3364,10 +3317,8 @@ if(my.eq.1)then
   yy=y
   call xyzstream1(dystream,yy,ddy,ym,yp,yym,ky,ny,&
   vym,vyp,tstep,sy,iyend,iy,2)
-  ! print *, 'tstep in case = ', tstep
 endif
 if(mz.eq.1)then
-    ! print *, 'case 1-3'
   iz=0
   vzm=bke*vel3(3,i,j,kz)/retth; vzp=bke*vel3(3,i,j,k)/retth
   zm=kz*dz; zp=zm+dz
@@ -3376,36 +3327,27 @@ if(mz.eq.1)then
   zz=z
   call xyzstream1(dzstream,zz,ddz,zm,zp,zzm,kz,nz,&
   vzm,vzp,tstep,sz,izend,iz,3)
-  ! print *, 'tstep in case = ', tstep
 endif
 !
 ! if particle hit edge of cell recalculate position for modefied tstep
 !
 ! if it passed the z face, recompute the x and y locations, and new cell
 if(izend.ne.0)then
-    ! print *, 'case 2-1'
   k=k+iz
   kz=k-1
   if(mx.eq.1)dxstream=xyzstream2(xx,xm,xxm,vxm,tstep,sx)
   if(my.eq.1)dystream=xyzstream2(yy,ym,yym,vym,tstep,sy)
 ! if it hit the y face, recompute the x location and new cell
-! print *, 'tstep in case = ', tstep
 elseif(iyend.ne.0)then
-    ! print *, 'case 2-2'
   j=j+iy
   ky=j-1
   if(mx.eq.1)dxstream=xyzstream2(xx,xm,xxm,vxm,tstep,sx)
 ! if it hit the x face, recompute new cell
-! print *, 'tstep in case = ', tstep
 elseif(ixend.ne.0)then
-    ! print *, 'case 2-3'
   i=i+ix
   kx=i-1
-  ! print *, 'tstep in case = ', tstep
 endif
-! print *, 'dtmin after logic block = ', dtmin
 dtmin=tstep
-! print *, 'dtmin from tstep = ', dtmin
 xstream=dxstream
 ystream=dystream
 zstream=dzstream
@@ -3422,14 +3364,9 @@ intent(in):: xxm,dx,xm,xp,kx,nx,vxm,vxp,idir
 intent(out):: dxstream,sx
 intent(inout):: tstep,ixend,ix,x
 sx=(vxp-vxm)/dx
-! print *, 'sx, vxp, vxm, dx = ', sx, vxp, vxm, dx
-! print *, 'tstep 3425 = ', tstep
 ! compute location
 dxstream=xyzstream2(x,xm,xxm,vxm,tstep,sx)
-! print *, 'tstep 3428 = ', tstep
 ! if particle hit edge, compute time to edge
-! print *, 'dxstream > xp, vxp > 0.0 = ', dxstream, xp, vxp
-! print *, 'dxstream < xm, vxm < 0.0 = ', dxstream, xp, vxp
 if(dxstream.gt.xp.and.vxp.gt.0.0)then
   ixend=1
   dxstream=xp
@@ -3440,14 +3377,8 @@ if(dxstream.gt.xp.and.vxp.gt.0.0)then
   if(kx+1.ne.nx)ix=1
   if(sx.ne.0.0)then
     tstep=log((sx*dx+vxm)/(sx*xxm+vxm))/sx
-    ! print *, 'tstep 3440 = ', tstep
   else
-! ***** here is where it goes negative ****
     tstep=(real(xp)-real(x))/vxm
-    if (x > xp) then
-        ! print *, 'single xp, x = ', sngl(xp), sngl(x)
-        ! print *, 'tstep 3443 = ', tstep
-    endif
   endif
 elseif(dxstream.lt.xm.and.vxm.lt.0.0)then
   ixend=1
@@ -3455,13 +3386,10 @@ elseif(dxstream.lt.xm.and.vxm.lt.0.0)then
   if(kx.ne.0)ix=-1
   if(sx.ne.0.0)then
     tstep=log(vxm/(sx*xxm+vxm))/sx
-    ! print *, 'tstep 3451 = ', tstep
   else
     tstep=-xxm/vxm
-    ! print *, 'tstep 3454 = ', tstep
   endif
 endif
-! print *, 'tstep 3457 = ', tstep
 return
 end
 !------------------------------------------------------------
@@ -3845,7 +3773,6 @@ do
      exit
   endif
 enddo
-! print *, 'x vel =  ', vel3(1,1:10,1,1)
 !.....some additional error checking
 if((checkx.eq.0.and.mx.eq.1).or.(checky.eq.0.and.my.eq.1).or.(checkz.eq.0.and.mz.eq.1))then
   write(*,2003)
@@ -5503,7 +5430,6 @@ integer:: i,j,k
 real:: time,x,y,z
 double precision:: pmass
 !
-! print *, '**** in addp ****'
 np=np+1
 pnumber=pnumber+1
 if(np.le.maxnp)then
