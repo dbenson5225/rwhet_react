@@ -19,3 +19,7 @@ myrun.log.txt
 *.prt
 compile.log
 rwhet_exe.dSYM/
+*.idea
+*.DS_Store
+RRWHET/rw_dolomite/MODFLOW/dolomite_vgrid/
+*~

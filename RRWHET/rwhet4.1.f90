@@ -553,7 +553,9 @@ deallocate (rech)
 if(allocated(chd))deallocate (chd)
 !
 !istat=dtime(tarray)
+print*
 print*,' Elapsed time:    ',tarray
+print*
 stop ' Normal Termination'
 !.....errors
 9990 stop ' Error in parameter input file!'
@@ -578,7 +580,7 @@ end
 ! maininput
 !------------------------------------------------------------
 subroutine maininput()
-! basic information, problem descriptiojn, allocation of memory, etc.
+! basic information, problem description, allocation of memory, etc.
 use global
 character (len=80) heading(2),dbgfile
 character (len=3) lpack(npack)
@@ -788,7 +790,7 @@ write(*,1001)ibug,dbgfile,nx,ny,nz,nxyz,dx,dy,dz,&
        ' velocity control :',3x,a/&
        ' boundaries       :',3x,a/&
        ' point sources    :',3x,a/&
-       ' moniotring points:',3x,a/)
+       ' monitoring points:',3x,a/)
 
 return
  9999      write(iout,*)' ERROR IN MAIN INPUT FILE'
@@ -1185,7 +1187,7 @@ do
   endif
   isam=isam+1
   backspace (insam)
-!.moniotring point in x,y,zbot,ztop,radius
+!.monitoring point in x,y,zbot,ztop,radius
   if(itype.eq.1)then
     read(insam,*,iostat=iostatus)sam(isam)%itype,x,y,zbot,ztop,radius,&
     sam(isam)%nzone,(sam(isam)%zone(izone),izone=1,sam(isam)%nzone)
@@ -1194,11 +1196,11 @@ do
        (zbot.gt.nz*dz.or.zbot.lt.0.).or.(ztop.gt.nz*dz.or.ztop.lt.0.))then
      rvol=0.0
      write(iout,2000,err=9999)isam,itype,x,y,zbot,ztop,radius,vol
-     write(iout,*)' Moniotring point not in domain'
-     print*,' Moniotring point not in domain'
+     write(iout,*)' monitoring point not in domain'
+     print*,' monitoring point not in domain'
      stop
     endif
-    kx=int(x/dx); ky=int(y/dy); kzbotm=int(zbot/dz)
+    kx=ifix(x/dx); ky=ifix(y/dy); kzbotm=ifix(zbot/dz)
     i=kx+1; j=ky+1; kzbot=kzbotm+1
     xm=kx*dx; ym=ky*dy; zm=kzbotm*dz; xp=xm+dx; yp=ym+dy; zp=zm+dz
     area=3.141529*radius*radius
@@ -1238,8 +1240,8 @@ do
     read(insam,*,iostat=iostatus)sam(isam)%itype,i,&
     sam(isam)%nzone,(sam(isam)%zone(izone),izone=1,sam(isam)%nzone)
     if(abs(i).gt.nx.or.abs(i).lt.1)then
-     write(iout,*)' Moniotring point not in domain'
-     print*,' Moniotring point not in domain'
+     write(iout,*)' monitoring point not in domain'
+     print*,' monitoring point not in domain'
      stop
     endif
     sam(isam)%ijk(1)=i
@@ -1250,8 +1252,8 @@ do
     read(insam,*,iostat=iostatus)sam(isam)%itype,j,&
     sam(isam)%nzone,(sam(isam)%zone(izone),izone=1,sam(isam)%nzone)
     if(abs(j)   .gt.ny.or.abs(j).lt.1)then
-     write(iout,*)' Moniotring point not in domain'
-     print*,' Moniotring point not in domain'
+     write(iout,*)' monitoring point not in domain'
+     print*,' monitoring point not in domain'
      stop
     endif
     sam(isam)%ijk(2)=j
@@ -1262,8 +1264,8 @@ do
     read(insam,*,iostat=iostatus)sam(isam)%itype,k,&
     sam(isam)%nzone,(sam(isam)%zone(izone),izone=1,sam(isam)%nzone)
     if(abs(k)   .gt.nz.or.abs(k).lt.1)then
-     write(iout,*)' Moniotring point not in domain'
-     print*,' Moniotring point not in domain'
+     write(iout,*)' monitoring point not in domain'
+     print*,' monitoring point not in domain'
      stop
     endif
     sam(isam)%ijk(3)=k
@@ -1275,8 +1277,8 @@ do
     sam(isam)%nzone,(sam(isam)%zone(izone),izone=1,sam(isam)%nzone)
     if(kzbot   .gt.nz.or.kzbot.lt.1)then
     if(kztop   .gt.nz.or.kztop.lt.1)then
-     write(iout,*)' Moniotring point not in domain'
-     print*,' Moniotring point not in domain',k,1,nz
+     write(iout,*)' monitoring point not in domain'
+     print*,' monitoring point not in domain',k,1,nz
      stop
     endif
     endif
@@ -1304,8 +1306,8 @@ do
     read(insam,*,iostat=iostatus)sam(isam)%itype,i,&
     sam(isam)%nzone,(sam(isam)%zone(izone),izone=1,sam(isam)%nzone)
     if(iabs(i)   .gt.nx)then
-     write(iout,*)' Moniotring point not in domain'
-     print*,' Moniotring point not in domain'
+     write(iout,*)' monitoring point not in domain'
+     print*,' monitoring point not in domain'
      stop
     endif
     sam(isam)%ijk(1)=i
@@ -1316,8 +1318,8 @@ do
     read(insam,*,iostat=iostatus)sam(isam)%itype,j,&
     sam(isam)%nzone,(sam(isam)%zone(izone),izone=1,sam(isam)%nzone)
     if(iabs(j)   .gt.ny)then
-     write(iout,*)' Moniotring point not in domain'
-     print*,' Moniotring point not in domain'
+     write(iout,*)' monitoring point not in domain'
+     print*,' monitoring point not in domain'
      stop
     endif
     sam(isam)%ijk(2)=j
@@ -1328,8 +1330,8 @@ do
     read(insam,*,iostat=iostatus)sam(isam)%itype,k,&
     sam(isam)%nzone,(sam(isam)%zone(izone),izone=1,sam(isam)%nzone)
     if(iabs(k)   .gt.nz)then
-     write(iout,*)' Moniotring point not in domain'
-     print*,' Moniotring point not in domain'
+     write(iout,*)' monitoring point not in domain'
+     print*,' monitoring point not in domain'
      stop
     endif
     sam(isam)%ijk(3)=k
@@ -1343,7 +1345,7 @@ enddo
 return
 
 9999 stop ' Error in monitoring file'
-2000 format(49('-'),' moniotring interval # ',i10/&
+2000 format(49('-'),' monitoring interval # ',i10/&
        ' type                         =  ',i10,' x,y,zbot,ztop'/&
        ' location (x,y)               =  ',2(' ',g10.5)/&
        ' location (zbot,ztop)         =  ',2(' ',g10.5)/&
@@ -1351,33 +1353,33 @@ return
        ' vol                          =  ',g10.5/&
        ' number of zones to sample    =  ',i10/&
    100(' zone                         =  ',i10/))
-2001 format(49('-'),' moniotring plane (max. conc. x-plane) # ',i10/&
+2001 format(49('-'),' monitoring plane (max. conc. x-plane) # ',i10/&
        ' type                         =  ',i10,' PLANE'/&
        ' location (i)                 =  ',1(' ',i10)/&
    100(' zone                         =  ',i10/))
-2002 format(49('-'),' moniotring plane (max. conc., or mass, y-plane) # ',i10/&
+2002 format(49('-'),' monitoring plane (max. conc., or mass, y-plane) # ',i10/&
        ' type                         =  ',i10,' PLANE'/&
        ' location (j)                 =  ',1(' ',i10)/&
    100(' zone                         =  ',i10/))
-2003 format(49('-'),' moniotring plane (max. conc., or mass, z-plane) # ',i10/&
+2003 format(49('-'),' monitoring plane (max. conc., or mass, z-plane) # ',i10/&
        ' type                         =  ',i10,' PLANE'/&
        ' location (k)                 =  ',1(' ',i10)/&
    100(' zone                         =  ',i10/))
-2004 format(49('-'),' moniotring interval for vertical column # ',i10/&
+2004 format(49('-'),' monitoring interval for vertical column # ',i10/&
        ' type                         =  ',i10,' CELL'/&
        ' location (i,j,kbot,ktop)     =  ',4(' ',i10)/&
        ' vol                          =  ',g10.5/&
        ' number of zones to sample    =  ',i10/&
    100(' zone                         =  ',i10/))
-2006 format(49('-'),' moniotring plane (mass on either side of a x-plane) # ',i10/&
+2006 format(49('-'),' monitoring plane (mass on either side of a x-plane) # ',i10/&
        ' type                         =  ',i10,' PLANE'/&
        ' location (j)                 =  ',1(' ',i10)/&
    100(' zone                         =  ',i10/))
-2007 format(49('-'),' moniotring plane (mass on either side of a y-plane) # ',i10/&
+2007 format(49('-'),' monitoring plane (mass on either side of a y-plane) # ',i10/&
        ' type                         =  ',i10,' PLANE'/&
        ' location (k)                 =  ',1(' ',i10)/&
    100(' zone                         =  ',i10/))
-2008 format(49('-'),' moniotring plane (mass on either side of a z-plane) # ',i10/&
+2008 format(49('-'),' monitoring plane (mass on either side of a z-plane) # ',i10/&
        ' type                         =  ',i10,' CELL'/&
        ' location (i,j,kbot,ktop)     =  ',4(' ',i10)/&
        ' vol                          =  ',g10.5/&
@@ -1726,8 +1728,8 @@ if(nzone.ne.1.and.inobgr.eq.0)deallocate (izone1)
 ! write (*,*) 'nzone = ', nzone
 ! write (*,*) 'inobgr = ', inobgr
 return
-9998 stop ' Error in parmater input file!'
-9999 stop ' Error in BGR file specfying zones!'
+9998 stop ' Error in parameter input file!'
+9999 stop ' Error in BGR file specifying zones!'
 2000 format('                           C O E F F I C I E N T S   '/&
             ' bgr file         :',3x,a/&
             ' number of zones                 ',13('.'),8x,i15///&
@@ -2259,7 +2261,7 @@ do ip=1,npart
 !
   do ! loop until flow is positive
     x=xm+sx*randu01(); y=ym+sy*randu01() !; z=zm+sz*randu01()
-    kx=int(x/dx); ky=int(y/dy) !; kz=int(z/dz)
+    kx=ifix(x/dx); ky=ifix(y/dy) !; kz=ifix(z/dz)
 ! determine kz and z from recharge array
     if(rech(kx+1,ky+1)%flow.gt.0.0)exit ! when we have found a positive flow region      
   enddo
@@ -2363,7 +2365,7 @@ do ip=ip0,ipn
 !...stream returns new cell location, 
 !...compute new cell location only if reflected
     if(x.ne.xold.or.y.ne.yold.or.z.ne.zold)then
-      kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
+      kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
       i=kx+1; j=ky+1; k=kz+1
       xm=kx*dx; ym=ky*dy; zm=kz*dz; xp=xm+dx; yp=ym+dy; zp=zm+dz
       call icell_correct(kx,ky,kz,i,j,k,x,y,z,xm,ym,zm,xp,yp,zp,vel3)
@@ -2430,10 +2432,10 @@ do ip=ip0,ipn
     sqrtretth=sqrt(ret4*th4)
 !...time-step control
     if(dtcntrl.ne.0.)then
-      ii=mx*(mod(int(x/dx2),2)-min(kx,1))
-      jj=my*(mod(int(y/dy2),2)-min(ky,1))
-      kk=mz*(mod(int(z/dz2),2)-min(kz,1))
-      dtmin=min(large,cat(i+ii,j+jj,k+kk)%tc,sngl(timeleft))
+      ii=mx*(mod(ifix(x/dx2),2)-min(kx,1))
+      jj=my*(mod(ifix(y/dy2),2)-min(ky,1))
+      kk=mz*(mod(ifix(z/dz2),2)-min(kz,1))
+      dtmin=min(large,cat(i+ii,j+jj,k+kk)%tc,sngl(timeleft)) 
     else
       dtmin=dtcurrent
     endif
@@ -2452,7 +2454,7 @@ do ip=ip0,ipn
     call reflect(sngl(timeleft),pat,cat,xt,yt,zt,ip)     
     if(.not.pat(1,ip)%active)exit
 !...compute new cell location from xt,yt,zt 
-    kxt=int(xt/dx); kyt=int(yt/dy); kzt=int(zt/dz)
+    kxt=ifix(xt/dx); kyt=ifix(yt/dy); kzt=ifix(zt/dz)
     it=kxt+1; jt=kyt+1; kt=kzt+1
 !...interpolate velocity
     vx4t=vel3(1,kxt,jt,kt)+(vel3(1,it,jt,kt)-vel3(1,kxt,jt,kt))*(xt/dx-float(kxt))
@@ -2475,7 +2477,7 @@ do ip=ip0,ipn
     call reflect(sngl(timeleft),pat,cat,x,y,z,ip)
     if(.not.pat(1,ip)%active)exit
 !...compute cell location
-    kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
+    kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
     i=kx+1; j=ky+1; k=kz+1
     xd=x-xo;yd=y-yo;zd=z-zo
 !    if(dtmin.lt.near)then   
@@ -2553,7 +2555,7 @@ do ip=ip0,ipn
 !...we use these indices to find in which corner the particle is located, e.g.,
 !...ii=1 if the partcle is located in the second half of the cell in the x direction
 !...ii=0 if "                            " first half "                          "
-    ii=mod(int(x/dx2),2); jj=mod(int(y/dy2),2); kk=mod(int(z/dz2),2)
+    ii=mod(ifix(x/dx2),2); jj=mod(ifix(y/dy2),2); kk=mod(ifix(z/dz2),2)
 !...get parameters from eight cells surrounding corner where partice is located
     iii=i+ii; jjj=j+jj; kkk=k+kk
     ith=1
@@ -2713,7 +2715,7 @@ do ip=ip0,ipn
     call reflect(sngl(timeleft),pat,cat,x,y,z,ip)
     if(.not.pat(1,ip)%active)exit
 !...compute cell location
-    kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
+    kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
     i=kx+1; j=ky+1; k=kz+1
     xd=x-xo;yd=y-yo;zd=z-zo
 !    if(dtmin.lt.near)then   
@@ -2836,7 +2838,7 @@ do ip=ip0,ipn
 !...we use these indices to find in which corner the particle is located
 !...ii=1 if the partcle is located in the second half of the cell in the x direction
 !...=0 if "                            " first half "                          "
-    ii=mod(int(x/dx2),2); jj=mod(int(y/dy2),2); kk=mod(int(z/dz2),2)
+    ii=mod(ifix(x/dx2),2); jj=mod(ifix(y/dy2),2); kk=mod(ifix(z/dz2),2)
 !...get parameters from eight cells surrounding corner where partice is located
     iii=i+ii; jjj=j+jj; kkk=k+kk
     ith=1
@@ -3053,7 +3055,7 @@ do ip=ip0,ipn
     call reflect(sngl(timeleft),pat,cat,x,y,z,ip)
     if(.not.pat(1,ip)%active)exit
 !...compute cell location
-    kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
+    kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
     i=kx+1; j=ky+1; k=kz+1
     xd=x-xo;yd=y-yo;zd=z-zo
 !    if(dtmin.lt.near)then   
@@ -3125,7 +3127,7 @@ do k=1,nz; do j=1,ny; do i=1,nx
   enddo; enddo; enddo
 ! minimum cell size
   rmindxyz2=min(rmx*dx*dx,rmy*dy*dy,rmz*dz*dz)
-  dtmin=real(dtinit)
+  dtmin=sngl(dtinit)
   if(diffxyz.ne.0.0)then
     cat(i,j,k)%tc=min(dtmin,dtcntrl*rmindxyz2/(48.0*diffxyz))
     if(dtcntrl*rmindxyz2/(48.0*diffxyz).lt.dtminimum)then
@@ -3363,7 +3365,7 @@ double precision:: sx,tstep,dxstream,xyzstream2
 intent(in):: xxm,dx,xm,xp,kx,nx,vxm,vxp,idir
 intent(out):: dxstream,sx
 intent(inout):: tstep,ixend,ix,x
-sx=(vxp-vxm)/dx
+sx=(vxp-vxm)/dx      
 ! compute location
 dxstream=xyzstream2(x,xm,xxm,vxm,tstep,sx)
 ! if particle hit edge, compute time to edge
@@ -3376,7 +3378,7 @@ if(dxstream.gt.xp.and.vxp.gt.0.0)then
 ! outside of the domain, where it is either absorbed or reflected.
   if(kx+1.ne.nx)ix=1
   if(sx.ne.0.0)then
-    tstep=log((sx*dx+vxm)/(sx*xxm+vxm))/sx
+    tstep=dlog((sx*dx+vxm)/(sx*xxm+vxm))/sx
   else
     tstep=(real(xp)-real(x))/vxm
   endif
@@ -3385,7 +3387,7 @@ elseif(dxstream.lt.xm.and.vxm.lt.0.0)then
   dxstream=(xm)
   if(kx.ne.0)ix=-1
   if(sx.ne.0.0)then
-    tstep=log(vxm/(sx*xxm+vxm))/sx
+    tstep=dlog(vxm/(sx*xxm+vxm))/sx
   else
     tstep=-xxm/vxm
   endif
@@ -3487,7 +3489,6 @@ elseif(iread_error.eq.-2)then
   goto 9999
 endif
 ! set file type
-!**** maybe change this to ASCII****
 vfile_type='binary'
 if(ivtype.lt.0)then
   vfile_type='unformatted'
@@ -4184,7 +4185,7 @@ do ipntsrc=1,npntsrc
      y.lt.0.0.or.y.gt.ny*dy.or.&
      z.lt.0.0.or.z.gt.nz*dz)goto 9998
 !.compute cell from x,y,z
-  kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
+  kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
   i=kx+1; j=ky+1; k=kz+1
   xm=kx*dx; ym=ky*dy; zm=kz*dz; xp=xm+dx; yp=ym+dy; zp=zm+dz
   call icell_correct(kx,ky,kz,i,j,k,x,y,z,xm,ym,zm,xp,yp,zp,vel3)
@@ -4251,7 +4252,9 @@ if(iflag.eq.1)then
       open(outunit(iopc),file=outfname(iopc),form='unformatted',status='unknown')      
     elseif(iopc.eq.2)then
 !     concentration file is unformatted
-      open(outunit(iopc),file=outfname(iopc),form='unformatted',status='unknown')
+!     DAB 10-2-17 Not any more!
+      open(outunit(iopc),file=outfname(iopc),status='unknown')
+!      open(outunit(iopc),file=outfname(iopc),form='unformatted',status='unknown')
     else
 !     open other files
       open(outunit(iopc),file=outfname(iopc),status='unknown')
@@ -4287,7 +4290,7 @@ enddo
 return
 1000  format('                           O U T P U T   F I L E S '/&
              ' moments                    :',3x,a/&
-             ' concetrations              :',3x,a/&
+             ' concentrations             :',3x,a/&
              ' macro-dispersion tensor    :',3x,a/&
              ' breakthrough counters      :',3x,a/&
              ' particle locations         :',3x,a/&
@@ -4323,7 +4326,7 @@ do ip=1,npart
       stop    ' error:too many particles, increase maxnp'
     endif
     x=xm+sx*randu01(); y=ym+sy*randu01(); z=zm+sz*randu01()
-    kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
+    kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
     if(kx.lt.0.or.ky.lt.0.or.kz.lt.0.or.kx.gt.nx-1.or.ky.gt.ny-1.or.kz.gt.nz-1)then
       ierr=-1
       return
@@ -4346,9 +4349,9 @@ real:: vel3(3,0:nx,0:ny,0:nz),sx,sy,sz,xm,ym,zm,qtotal,q,r,randu01,sznew,zmnew,x
 real, allocatable:: probw(:)
 double precision pmass
 integer:: iw,nw,kxm,im,kym,jm,kzm,km,i,j,k,kxp,kyp,kzp,ip,kp,kx,ky,kz,npart,iptype
-kxm=int(xm/dx); kym=int(ym/dy); kzm=int(zm/dz)
+kxm=ifix(xm/dx); kym=ifix(ym/dy); kzm=ifix(zm/dz)
 im=kxm+1; jm=kym+1; km=kzm+1
-kxp=int((xm+sx)/dx); kyp=int((ym+sy)/dy); kzp=int((zm+sz)/dz)
+kxp=ifix((xm+sx)/dx); kyp=ifix((ym+sy)/dy); kzp=ifix((zm+sz)/dz)
 kp=kzp+1
 nw=kp-km+1
 allocate(probw(nw))
@@ -4385,7 +4388,7 @@ do ip=1,npart
       stop    ' error:too many particles, increase maxnp'
     endif
     x=xm+sx*randu01(); y=ym+sy*randu01(); z=zmnew+sznew*randu01()
-    kx=int(x/dx); ky=int(y/dy); kz=int(z/dz)
+    kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
     call addp(time,x,y,z,kx+1,ky+1,kz+1,pmass,pat,cat)
 enddo
 return
@@ -4672,7 +4675,7 @@ end
 ! plotc
 !---------------------------------------------------------------------
 subroutine plotc(cat,iunit,opc,por,ret)
-! plot partice density and concentration 
+! plot particle density and concentration 
 use global
 type (cell)::     cat(nx,ny,nz)
 integer opc(nopc)
@@ -4684,7 +4687,8 @@ integer:: i,j,k,ijk
 data iflag/1/
 !.cell number and np file
 if(iflag.eq.1)then
-  write(iunit)nx,ny,nz,dx,dy,dz
+!DAB formatted output
+  write(iunit,*)nx,ny,nz,dx,dy,dz
   iflag=0
 endif
 ncl=0 
@@ -4712,11 +4716,11 @@ do icl=1,ncl
   if(opc(2).eq.2)cell2(n)=cat(i,j,k)%cmass/dble(vol*por(cat(i,j,k)%zone)*ret(cat(i,j,k)%zone))
   n=n+1
 enddo
-
-write(iunit)sngl(curtime),ncl
-write(iunit)ncell1
-if(opc(2).eq.1)write(iunit)ncell2
-if(opc(2).eq.2)write(iunit)cell2
+!DAB formatted output
+write(iunit,*)sngl(curtime),ncl
+write(iunit,*)ncell1
+if(opc(2).eq.1)write(iunit,*)ncell2
+if(opc(2).eq.2)write(iunit,*)cell2
 
 ! clean house
 deallocate (ncellt)
@@ -4853,7 +4857,7 @@ do isam=1,nsam
       zdiff=abs(pat(1,ip)%xyz(3)-(sam(isam)%xyz(3)+sam(isam)%xyz(4))/2.0)
       thick=(sam(isam)%xyz(4)-sam(isam)%xyz(3))/2.0
       if(dxy.le.sam(isam)%radius.and.zdiff.le.thick)then
-        kx=int(pat(1,ip)%xyz(1)/dx); ky=int(pat(1,ip)%xyz(2)/dy); kz=int(pat(1,ip)%xyz(3)/dz)
+        kx=ifix(pat(1,ip)%xyz(1)/dx); ky=ifix(pat(1,ip)%xyz(2)/dy); kz=ifix(pat(1,ip)%xyz(3)/dz)
         i=kx+1; j=ky+1; k=kz+1
         do izone=1,sam(isam)%nzone
           if(cat(i,j,k)%zone.eq.sam(isam)%zone(izone))then
@@ -5000,7 +5004,7 @@ do isam=1,nsam
     endif
   elseif(sam(isam)%itype.eq.5)then 
     do ip=1,np
-      kx=int(pat(1,ip)%xyz(1)/dx); ky=int(pat(1,ip)%xyz(2)/dy); kz=int(pat(1,ip)%xyz(3)/dz)
+      kx=ifix(pat(1,ip)%xyz(1)/dx); ky=ifix(pat(1,ip)%xyz(2)/dy); kz=ifix(pat(1,ip)%xyz(3)/dz)
       i=kx+1; j=ky+1; k=kz+1
       if(i.eq.sam(isam)%ijk(1).and.j.eq.sam(isam)%ijk(2).and.&
         (k.ge.sam(isam)%ijk(3).and.k.le.sam(isam)%ijk(4)))then
@@ -5178,7 +5182,7 @@ if(np.gt.0)then
   sigzz=mz*(sigzz/totmas-zmean*zmean)
 endif
 write(iunit,20) sngl(curtime),xmean,ymean,zmean,sigxx,sigxy,sigxz,sigyy,sigyz,sigzz
-20 format(1x,16(f15.4,1x)) 
+20 format(1x,16(f15.6,1x)) 
 return
 end
 

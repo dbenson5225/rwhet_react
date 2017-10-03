@@ -13,8 +13,8 @@ dolomite.dbg
 100000
 30003 30005
 0 1.0                /interp, bke(1=forward, -1=backward)
-0.0001 1              /ccon_min, ip_res_min
-10000.0 100.0 0.0 1
+0.0000001 1              /ccon_min, ip_res_min
+1000.0 100.0 0.0 1
 dolomite.opc
 dolomite.par
 dolomite.vlc
