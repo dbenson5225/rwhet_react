@@ -1,4 +1,4 @@
-!   Reactive RWHET.  Original RWHET modified 10/2017 by David Benson to allow chemical reactions
+!   Reactive RWHET.  Original RWHET modified 10/2017 by David Benson to allow chemical reactions.
 !
 ! This code solves arbitrary reactions and transport by particles.
 ! There are two logical ways to add reactions.  The first, in which each particle is composed
