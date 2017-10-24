@@ -1,0 +1,4 @@
+#!/bin/bash
+
+mytime="$( TIMEFORMAT='%U'; time ( ./run  2>&1 1>/dev/null ) 2>&1 1>/dev/null )"
+echo 'run time = '$mytime

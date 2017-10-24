@@ -1,0 +1,7 @@
+#!/bin/bash
+
+make
+# ./RPT_exe
+./RPT_exe 2> a.err
+# ./RPT_exe > a.out 2> a.err
+date

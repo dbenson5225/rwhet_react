@@ -1,9 +1,11 @@
 clear all
 %geom=zeros(5,6);
 %concfile=fopen('dolomite.con');
+
 concfile='dolomite.con';
 geom=dlmread(concfile);
-times=(size(geom,1)-4)/3;
+nspec=geom(1,7)
+times=(size(geom,1)-7)/(2+2*nspec);
 mom=zeros(times,4);
 nx=geom(1,1);ny=geom(1,2);nz=geom(1,3);
 dx=geom(1,4);dy=geom(1,5);dz=geom(1,6);
@@ -14,37 +16,40 @@ for i=1:3
     end
 end
 nxy=nx*ny;
-maxc=max(geom(7,:))
+maxc=max(geom(11,:))
 %domain=squeeze(zeros(nx,ny,nz));
-domain=zeros(nx,ny,nz);
+%domain=zeros(nx,ny,nz,nspec);
 
 for l=1:times
-    adv=3*l-3;
-    t=geom(adv+5,1);
-    nboxes=geom(adv+5,2);
+    domain=zeros(nx,ny,nz,nspec);
+    adv=(2+2*nspec)*(l-1);
+    t=geom(adv+8,1);
+    nboxes=geom(adv+8,2);
 % convert box numbers to i,j,k
     for n=1:nboxes
-        ijk=geom(adv+6,n);
+        ijk=geom(adv+9,n);
         kbox=floor((ijk-1)/nxy)+1;
         jbox=floor((ijk-1-(kbox-1)*nxy)/nx)+1;  
         ibox=ijk-(kbox-1)*nxy-(jbox-1)*nx;
-        domain(ibox,jbox,kbox)=geom(adv+7,n);   % puts conc in right box
+        for m=1:nspec;
+          domain(ibox,jbox,kbox,m)=geom(adv+9+2*m,n);  % puts conc in right box
+        end
     end
 % Plot in the right number of dimensions
   if dirs==1
-    xpos=dx*geom(adv+6,1:nboxes);  xpos=xpos';
-    cpos=domain(domain>0);
-    figure(11);plot(xpos,cpos);
-    axis([0 nx*dx 0 maxc])
-    mean=sum(xpos.*cpos)/sum(cpos);
-    var=sum(xpos.*xpos.*cpos)/sum(cpos)-mean.^2
-    title(['Time = ',num2str(t),', Mean = ',num2str(mean),', Var = ',num2str(var)])
-    domain=zeros(size(domain));
-    outfile=['plots/plot',num2str(t)]
-    print('-f11',outfile,'-dpdf');
-    mom(l,1)=t; mom(l,2)=mean; mom(l,3)=var; mom(l,4)=2*1.2e-7*t;
-    mom(l,5)=sum(cpos)*dx;
-%    pause
+%    cpos=domain(domain>0);
+    for m=1:nspec
+      xplot=dx*(1:nx)';
+      cplot=domain(:,:,:,m);
+      xplot=xplot(cplot>0); cplot=cplot(cplot>0)
+      figure(m);plot(xplot,cplot);     
+      axis([0 nx*dx 0 maxc])
+      mean=sum(xplot.*cplot)/sum(cplot);
+      var=sum(xplot.*xplot.*cplot)/sum(cplot)-mean.^2;
+      mom(l,m,1)=t; mom(l,m,2)=mean; mom(l,m,3)=var; mom(l,m,4)=2*1.2e-7*t;
+      mom(l,m,5)=sum(cplot)*dx;  
+    end
+      pause
   end
   if dirs==2
     contourf(squeeze(domain));  % not sure which dimension is singleton
@@ -53,8 +58,13 @@ for l=1:times
   end
 end   % time loop
 
-figure; plot(mom(:,1),mom(:,2),'-o');
-figure; plot(mom(:,1),mom(:,3),'-o'); hold on
-plot(mom(:,1),mom(:,4));
-figure(); plot(mom(:,1),mom(:,5));
+figure; plot(mom(:,1,1),mom(:,1,2),'-o');
+figure; plot(mom(:,1,1),mom(:,1,3),'-o'); hold on
+plot(mom(:,1,1),mom(:,2,3),'-o')
+plot(mom(:,1,1),mom(:,1,4));
+figure(); plot(mom(:,1,1),mom(:,1,5));
+title(['Time = ',num2str(t),', Mean = ',num2str(mean),', Var = ',num2str(var)])
+%    outfile=['plots/plot',num2str(t)]
+%    print('-f11',outfile,'-dpdf');
+%    pause
     
