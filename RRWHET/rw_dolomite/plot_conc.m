@@ -1,7 +1,7 @@
 clear all
 %geom=zeros(5,6);
 %concfile=fopen('dolomite.con');
-
+vel=2.4e-5;Diff=1.2e-7;x_0=0.05;
 concfile='dolomite.con';
 geom=dlmread(concfile);
 nspec=geom(1,7)
@@ -46,7 +46,7 @@ for l=1:times
       axis([0 nx*dx 0 maxc])
       mean=sum(xplot.*cplot)/sum(cplot);
       var=sum(xplot.*xplot.*cplot)/sum(cplot)-mean.^2;
-      mom(l,m,1)=t; mom(l,m,2)=mean; mom(l,m,3)=var; mom(l,m,4)=2*1.2e-7*t;
+      mom(l,m,1)=t; mom(l,m,2)=mean; mom(l,m,3)=var; mom(l,m,4)=2*Diff*t;
       mom(l,m,5)=sum(cplot)*dx;  
     end
       pause
@@ -58,7 +58,8 @@ for l=1:times
   end
 end   % time loop
 
-figure; plot(mom(:,1,1),mom(:,1,2),'-o');
+figure; plot(mom(:,1,1),mom(:,1,2),'-o'); hold on
+plot(mom(:,1,1), x_0+vel*mom(:,1,1));
 figure; plot(mom(:,1,1),mom(:,1,3),'-o'); hold on
 plot(mom(:,1,1),mom(:,2,3),'-o')
 plot(mom(:,1,1),mom(:,1,4));

@@ -71,8 +71,8 @@
 !	Changed meaning of dtcntrl, now scales linearly with step size; use 1.0 to limit to cell
 ! Version 4.1
 module global
-!define a particle -- hardwire number of species (nspec) right now.
-  integer, parameter:: nspec=2
+! DAB hardwire number of mobile species (nspec) and immobile species(inspec) right now.
+  integer, parameter:: nspec=2,inspec=2
   type sample
     real:: xyz(4),radius,vol                    ! x,y,zbot,ztop,radius of sample location
     real:: conc(nspec),mass(nspec)     ! concentration for all time
@@ -85,6 +85,15 @@ module global
     integer:: pnumber                       ! cell location
     logical*2:: active                        ! active particle?
   end type particle
+
+  type imparticle
+    real:: xyz(3),birth_day,death_day !,birth_place(3)  ! location,birth time
+    double precision:: pmass(inspec)             ! mass of each immobile species
+    integer*2:: ijk(3)                      ! cell location
+    integer:: pnumber                       ! cell location
+    logical*2:: active                        ! active particle?
+  end type imparticle
+
 
 ! define a cell
   type cell
@@ -203,7 +212,7 @@ implicit none
 !
 type (sample), allocatable:: sam(:)
 type (particle), allocatable:: pat(:,:)
-type (particle), allocatable:: im(:,:)
+type (imparticle), allocatable:: imp(:,:)
 type (cell), allocatable::     cat(:,:,:)
 type (boundary), allocatable:: bounds(:)
 type (recharge), allocatable:: rech(:,:)
@@ -512,12 +521,12 @@ if(curtime.eq.tnextbnd)then
 !.....initialize Courant condition for sources 
   call courant(source,bounds,vel3,cat,por)
 endif
-!.....initial particle distribution
-if(curtime.eq.tnextpnt)call pntupdt(pat,cat,vel3)
+!.....initial particle distribution (MUST INPUT INITIAL IMMOBILE PARTICLES HERE)
+if(curtime.eq.tnextpnt)call pntupdt(pat,imp,cat,vel3)
 !.....initialize sources boundary information
 if(ibug.ge.1)then;string(1)=' SRCUPDT!';call debug(ibugout,string,nline);endif
 call srcupdt(source,bounds,pat,cat)
-!.....output at intial time?
+!.....output at initial time?
 if(curtime.eq.tnextopc)then
   if(ibug.ge.1)then;string(1)=' OUTPUT!';call debug(ibugout,string,nline);endif
   call output(opc,outunit,outfname,sam,pat,cat,vel3,bounds,por,ret,decay)
@@ -526,7 +535,7 @@ endif
 call cnf(outfname(2),icnf,nx,ny,nz,dx,dy,dz)
 if(np.ne.0)call split(pat,cat,bounds,por,ret)
 !
-!.....SOLVE PROBLEM
+!.....SOLVE PROBLEM (NOW INCLUDING MIXING AND REACTIONS)
 !
 !.....pass the appropriate function to solve
 !.....movep1: advection only
@@ -1809,11 +1818,12 @@ end
 !------------------------------------------------------------
 ! solve
 !------------------------------------------------------------
-subroutine solve(movep,sam,cat,pat,rech,chd,vel3,por,ret,dlong,dtran,&
+subroutine solve(movep,sam,cat,pat,immob,rech,chd,vel3,por,ret,dlong,dtran,&
 ddiff,decay,bounds,source,opc,outunit,outfname)
 use global
 implicit none
 type (particle):: pat(1,maxnp)
+type (imparticle):: imp(1,maxnp)
 type (sample):: sam(nsam)
 type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(1:maxbnd)
@@ -1856,6 +1866,14 @@ do; if(.not.(curtime.lt.tmax))exit
   if(ibug.ge.1)then;string(1)=' CALL SPLIT!';call debug(ibugout,string,nline);endif
   if(np.ne.0)call split(pat,cat,bounds,por,ret)
 ! DAB put in mixing subroutine call here
+
+    nactive = count(pat%active)
+    allocate (alive(nactive)) ! maybe preallocate to avoid repeatedly doing this
+    alive = pack(indices, mparts%active)
+    mparts(alive)%bin = floor(mparts(alive)%loc/dxv) + 1
+
+    call mix_particles(immob, pat, nactive, alive, nipart, D, dt, omega)
+
 
 ! DAB put in reaction subroutine here 
 
@@ -4263,10 +4281,11 @@ end
 !------------------------------------------------------------
 ! pntupdt
 !------------------------------------------------------------
-subroutine pntupdt(pat,cat,vel3)
+subroutine pntupdt(pat,imp,cat,vel3)
 use global
 implicit none
 type (particle):: pat(1,maxnp)
+type (imparticle):: imp(1,maxnp)
 type (cell)::     cat(nx,ny,nz)
 !.....read point source information
 integer:: ipntsrc,indomain,iread_error,kx,ky,kz,i,j,k
