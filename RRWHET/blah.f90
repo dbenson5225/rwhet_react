@@ -75,8 +75,8 @@ module global
   integer, parameter:: nspec=2,inspec=2
   type sample
     real:: xyz(4),radius,vol                    ! x,y,zbot,ztop,radius of sample location
-    real:: conc(nspec),mass(nspec)     ! concentration for all time
-    integer*2:: ijk(4),itype,nzone,zone(100)                      ! cell location and type (1 = x,y,z, 0 = i,j,k) of sample location
+    real:: conc(nspec),mass(nspec)              ! concentration for all time
+    integer*2:: ijk(4),itype,nzone,zone(100)    ! cell location and type (1 = x,y,z, 0 = i,j,k) of sample location
   end type sample            
   type particle
     real:: xyz(3),birth_day,death_day !,birth_place(3)  ! location,birth time
