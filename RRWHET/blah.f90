@@ -99,7 +99,9 @@ module global
   type cell
     real::             tc                   ! time step control 
     double precision:: cmass(nspec),mass_remove(nspec)    ! mass in cell, mass lost since last report
+    double precision:: cimmass(inspec)      ! Immobile mass in cell
     integer::          np_cell,np_remove    ! # of particles per cell, # lost since last report 
+    integer::          nimp_cell,nimp_remove   ! # of IMMOBILE particles per cell, # lost since last report 
     integer::          bc_number,zone       ! bc condition #, zone number                
   end type cell            
 ! boundary  
@@ -147,6 +149,7 @@ module global
 ! netmassm(3)  - mass passing through minimum extents of domain 
 ! pnumber      - incremental particle number 
   integer:: nx,ny,nz,nxy,mx,my,mz,nxyz,np,maxnp,pnumber,nline
+  integer:: nimp,impnumber
   integer:: nbounds,maxbnd,maxsource,nsource,npntsrc,nchd
   integer:: netxyzp(3),netxyzm(3),netsplit,ixyzp(3),ixyzm(3)
   integer:: ixyzmax(3),ixyzmin(3),npbc(nbtype+1)
@@ -521,7 +524,7 @@ if(curtime.eq.tnextbnd)then
 !.....initialize Courant condition for sources 
   call courant(source,bounds,vel3,cat,por)
 endif
-!.....initial particle distribution (MUST INPUT INITIAL IMMOBILE PARTICLES HERE)
+!.....initial particle distribution (DAB MUST INPUT INITIAL IMMOBILE PARTICLES HERE)
 if(curtime.eq.tnextpnt)call pntupdt(pat,imp,cat,vel3)
 !.....initialize sources boundary information
 if(ibug.ge.1)then;string(1)=' SRCUPDT!';call debug(ibugout,string,nline);endif
@@ -1818,7 +1821,7 @@ end
 !------------------------------------------------------------
 ! solve
 !------------------------------------------------------------
-subroutine solve(movep,sam,cat,pat,immob,rech,chd,vel3,por,ret,dlong,dtran,&
+subroutine solve(movep,sam,cat,pat,imp,rech,chd,vel3,por,ret,dlong,dtran,&
 ddiff,decay,bounds,source,opc,outunit,outfname)
 use global
 implicit none
@@ -1872,8 +1875,11 @@ do; if(.not.(curtime.lt.tmax))exit
     alive = pack(indices, mparts%active)
     mparts(alive)%bin = floor(mparts(alive)%loc/dxv) + 1
 
-    call mix_particles(immob, pat, nactive, alive, nipart, D, dt, omega)
+    call kdtree(
 
+    call mix_particles(imp, pat, nactive, alive, nipart, D, dt, omega)
+
+    call abc(imp,pat)
 
 ! DAB put in reaction subroutine here 
 
@@ -1903,7 +1909,7 @@ do; if(.not.(curtime.lt.tmax))exit
   if((curtime.eq.tnextpnt).and.ibug.ge.1)then
     string(1)=' CALL PNTUPDT!';call debug(ibugout,string,nline)
   endif
-  if(curtime.eq.tnextpnt)call pntupdt(pat,cat,vel3)
+  if(curtime.eq.tnextpnt)call pntupdt(pat,imp,cat,vel3)
 !.update sources
   if((curtime.eq.tnextsrc).and.ibug.ge.1)then
     string(1)=' CALL SRCUPDT!';call debug(ibugout,string,nline)
@@ -4290,17 +4296,34 @@ type (cell)::     cat(nx,ny,nz)
 !.....read point source information
 integer:: ipntsrc,indomain,iread_error,kx,ky,kz,i,j,k
 integer:: inppnt,nppnt,iptype
-real:: x,y,z,xm,ym,zm,xp,yp,zp
+integer:: ptype
+real:: x,y,z,xm,ym,zm,xp,yp,zp,xmax,ymax,zmax,xmin,ymin,zmin
 real:: vel3(3,0:nx,0:ny,0:nz)
 double precision:: pmass(nspec)
 !
 do ipntsrc=1,npntsrc
+
   call skip(inpnt)
-  read(inpnt,*,err=9999)x,y,z,nppnt,pmass
+  read(inpnt,*,err=9999)xmin,xmax,ymin,ymax,zmin,zmax,nppnt,pmass,ptype  
+
 !.check if particle is in domain
-  if(x.lt.0.0.or.x.gt.nx*dx.or.& 
-     y.lt.0.0.or.y.gt.ny*dy.or.&
-     z.lt.0.0.or.z.gt.nz*dz)goto 9998
+  if(x.lt.0.0.or.xmax.gt.nx*dx.or.& 
+     y.lt.0.0.or.ymax.gt.ny*dy.or.&
+     z.lt.0.0.or.zmax.gt.nz*dz)goto 9998
+
+     if(ptype.eq.0) mass=mass+nppnt*pmass  ! DAB count mobile mass
+
+     npbc(nbtype+1)=npbc(nbtype+1)+nppnt
+     do iloop=1,nspec
+        massbc(nbtype+1,iloop)=massbc(nbtype+1,iloop)+nppnt*pmass(iloop)
+     enddo
+
+! DAB Do this point by point to add random positions between x and xmax, etc.
+   do inppnt=1,nppnt
+   x=xmin+rand()*(xmax-xmin)
+   y=ymin+rand()*(ymax-ymin)
+   z=zmin+rand()*(zmax-zmin)
+
 !.compute cell from x,y,z
   kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
   i=kx+1; j=ky+1; k=kz+1
@@ -4316,18 +4339,14 @@ do ipntsrc=1,npntsrc
     cycle
   endif
 !
-  mass=mass+nppnt*pmass
-  npbc(nbtype+1)=npbc(nbtype+1)+nppnt
-        do iloop=1,nspec
-           massbc(nbtype+1,iloop)=massbc(nbtype+1,iloop)+nppnt*pmass(iloop)
-        enddo
 !  massbc(nbtype+1)=massbc(nbtype+1)+nppnt*pmass
-  do inppnt=1,nppnt
+! DAB moved up this loop start ... do inppnt=1,nppnt
       if(np+1.gt.maxnp)then
         write(iout,*)' error: maximum # of particles exceeded in pntupdt'
         stop ' error: maximum # of particles exceeded in pntupdt'
       endif
-      call addp(sngl(curtime),x,y,z,i,j,k,pmass,pat,cat)
+      if(ptype.eq.q)call addimp(sngl(curtime),x,y,z,i,j,k,pmass,imp,cat)
+      if(ptype.eq.0)call   addp(sngl(curtime),x,y,z,i,j,k,pmass,pat,cat)
   enddo
 enddo
 call skip(inpnt)
@@ -5628,11 +5647,13 @@ subroutine addp(time,x,y,z,i,j,k,pmass,pat,cat)
 use global
 implicit none
 type (particle):: pat(1,maxnp)
+!type (imparticle):: imp(1,maxnp)
 type (cell)::     cat(nx,ny,nz)
-integer:: i,j,k
+integer:: i,j,k,ptype
 real:: time,x,y,z
 double precision:: pmass(nspec)
 !
+
 np=np+1
 pnumber=pnumber+1
 if(np.le.maxnp)then
@@ -5651,6 +5672,47 @@ if(np.le.maxnp)then
   cat(i,j,k)%cmass=cat(i,j,k)%cmass+pmass   ! mass in cell
 ! log the bithplace in outp and tag with a NEGATIVE ip
   write(ioutp)-pat(1,np)%pnumber  
+  write(ioutp)x,y,z  
+else
+  write(iout,*)' maxnp exceded'
+  write(*,*)' maxnp exceded'
+  stop
+endif
+return
+end
+!------------------------------------------------------------
+! addimp
+!------------------------------------------------------------
+subroutine addimp(time,x,y,z,i,j,k,pmass,imp,cat)
+!.....add a particle at location x,y,x,in cell, with masses pmass
+use global
+implicit none
+!type (particle):: pat(1,maxnp)
+type (imparticle):: imp(1,maxnp)
+type (cell)::     cat(nx,ny,nz)
+integer:: i,j,k,ptype
+real:: time,x,y,z
+double precision:: pmass(inspec)
+!
+
+nimp=nimp+1
+impnumber=impnumber+1
+if(nimp.le.maxnp)then
+!.initialize new IMMOBILE particle
+  imp(1,nimp)%xyz(1)=x; imp(1,np)%xyz(2)=y; imp(1,np)%xyz(3)=z
+!  pat(1,nimp)%birth_place(1)=x; pat(1,np)%birth_place(2)=y; pat(1,np)%birth_place(3)=z
+  imp(1,nimp)%birth_day=time
+  imp(1,nimp)%pmass=pmass
+  imp(1,nimp)%pnumber=impnumber
+  imp(1,nimp)%ijk(1)=i; imp(1,np)%ijk(2)=j; imp(1,np)%ijk(3)=k
+  imp(1,nimp)%active=.true.                  
+  imp(1,nimp)%death_day=0.0  
+!
+  cat(i,j,k)%nimp_cell=cat(i,j,k)%nimp_cell+1       ! number of particles in cell
+!
+  cat(i,j,k)%cimmass=cat(i,j,k)%cmass+pmass   ! mass in cell
+! log the bithplace in outp and tag with a NEGATIVE ip
+  write(ioutp)-imp(1,np)%pnumber  
   write(ioutp)x,y,z  
 else
   write(iout,*)' maxnp exceded'

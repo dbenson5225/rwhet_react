@@ -1,3 +1,4 @@
-0.      0                     /time to next pnt release (tnextpnt), no of pnt sources
+0.      1     /time to next pnt release (tnextpnt), no of pnt sources, number of particles
+0 0.5 0.5 0.5 0.5 0.5 1000 0.1 0.0  1 /xmin, xmax, ymin, ymax, zmin, zmax, nppnt, pmass(spec or inspec), mobile (0) or immobile (1)
 
  

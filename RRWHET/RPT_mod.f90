@@ -1,4 +1,8 @@
+!  Modified from Mike Schmidt by David Benson for inclusion into Reactive RWHet
+!  For now, do not include interface to Phceeqc.
+
 module RPT_mod
+    use global                      ! From rwhet
     use kdtree2_precision_module
     use kdtree2_module
     implicit none
@@ -10,10 +14,9 @@ module RPT_mod
     ! type selectout_list
     !     character(:), allocatable :: head
     ! end type
-
     integer, parameter          :: sp = kind(1.0), dp = kind(1.d0)
     double precision, parameter :: pi = 4.0d0 * atan(1.0d0)
-    integer, parameter          :: nspec = 8, numsd = 3, num_alloc = 1e4
+ !   integer, parameter          :: nspec = 8, numsd = 3, num_alloc = 1e4
         ! *****hard-coded nspec--fix to make this general*****
         ! numsd is distances over which particle reactions are considered
         ! num_alloc is the maximum number of nearby particles expected to be
@@ -22,25 +25,25 @@ module RPT_mod
 
     ! mobile particle type
     ! NOTE: these are currently for a 1D problem
-    type mparticle
-        double precision :: loc ! real-valued spatial location
-        double precision :: concs(nspec) ! vector of chemical concentrations
+!    type mparticle
+!        double precision :: loc ! real-valued spatial location
+!        double precision :: concs(nspec) ! vector of chemical concentrations
         ! *****hard-coded nspec--fix to make this general*****
-        logical          :: active
+!        logical          :: active
             ! indicates whether particle is active and within the domain
-        integer          :: bin
+!        integer          :: bin
             ! used to indicate which spatial gridpoint a particle resides within
             ! i keep it with the particle to avoid calculating multiple times
             ! in a single time step
-    end type
+!    end type
     ! immobile particle type
-    type iparticle
-        double precision :: loc
-        double precision :: concs(nspec)
-            ! *****hard-coded nspec--fix to make this general*****
+!    type iparticle
+!        double precision :: loc
+!        double precision :: concs(nspec)
+        ! *****hard-coded nspec--fix to make this general*****
         ! logical        :: active
         ! integer        :: bin
-    end type
+!    end type
 
     ! a couple of derived types for the kd tree search
 
@@ -68,156 +71,24 @@ module RPT_mod
         deallocate(seed)
     end subroutine init_random_seed
 
-    ! this generates the PHREEQC input file for this specific problem
-    subroutine phreeqc_input(calcite_in, na_in, mg_in, ca_in, cl_in, co2_in,&
-                             dolomite_in, quartz_in)
-        double precision, intent(in   ) :: calcite_in, na_in, mg_in, ca_in,&
-                                           cl_in, co2_in, dolomite_in, quartz_in
-        character*1                     :: tab
-
-        tab = char(9)
-
-        open (unit=11, file='dolomite_chem.in', action='write')
-        write (11, *) '# Brine-CO2-Calcite-Quartz system'
-        write (11, *) 'SOLUTION 0 Brine'
-        write (11, *) tab, 'pH 7.0'
-        write (11, *) tab, 'units mol/L'
-        write (11, *) tab, 'temp 60.000000'
-        write (11, *) tab, 'pressure 98.6923 atm' ! = 100 bar
-        write (11, '(A, A, f8.6)') tab, 'Na ', Na_in
-        write (11, '(A, A, f8.6)') tab, 'Mg ', mg_in
-        write (11, '(A, A, f8.6)') tab, 'Ca ', ca_in
-        write (11, '(A, A, f8.6, A)') tab, 'Cl ', cl_in, ' charge'
-        write (11, *) 'EQUILIBRIUM_PHASES 0'
-        write (11, '(A, A, f9.6)') tab, 'CO2(g) 2.0 ', co2_in
-        write (11, *) 'SAVE solution 0'
-        write (11, *) 'END'
-        write (11, *) 'SOLUTION 1 Domain'
-        write (11, *) tab, 'pH 7.0'!
-        write (11, *) tab, 'units mol/L'
-        write (11, *) tab, 'temp 60.000000'
-        write (11, *) tab, 'pressure 98.6923 atm' ! = 100 bar
-        write (11, *) tab, 'Cl 0.0100 charge'
-        write (11, *) 'EQUILIBRIUM_PHASES 1'
-        write (11, '(A, A, f9.6)') tab, 'Calcite 0.000000', calcite_in
-        write (11, *) tab, 'Dolomite 0.000000 0.000000'
-        ! write (11, *) tab, 'Quartz 0.000000 22.000000'
-        write (11, *) 'SAVE solution 1'
-        write (11, *) 'SELECTED_OUTPUT'
-        write (11, *) tab, '-simulation false'
-        write (11, *) tab, '-state false'
-        write (11, *) tab, '-solution false'
-        write (11, *) tab, '-distance false'
-        write (11, *) tab, '-time false'
-        write (11, *) tab, '-step false'
-        write (11, *) tab, '-ph true' ! get pH output
-        write (11, *) tab, '-pe false'
-        write (11, *) tab, '-equilibrium_phases Calcite Dolomite'
-            ! get calcite and dolomite concentrations
-        write (11, *) 'END'
-        close (unit=11, status='keep')
-    end subroutine
-
-    ! moves active particles via advection
-    subroutine advect(p, v, dt, alive)
-        type(mparticle),  intent(inout) :: p(:) ! mobile particle array
-        double precision, intent(in   ) :: v(:), dt ! veclocity grid and time step
-        integer,          intent(in   ) :: alive(:)
-            ! array of indices of active particles
-
-        ! use the velocity of the relevant cell, based on bin value
-        p(alive)%loc = p(alive)%loc + v(p(alive)%bin) * dt
-    end subroutine advect
-
-    ! moves active particles via diffusion
-    subroutine diffuse(p, np, D, dt, alive)
-        type(mparticle),  intent(inout) :: p(:) ! mobile particle array
-        double precision, intent(in   ) :: D(:), dt
-            ! diffusion coefficient grid and time step
-        integer,          intent(in   ) :: np, alive(:)
-        ! number and array of indices of active particles
-        double precision                :: normvec(np)
-            ! vector which will hold Normal(0, 1) values
-
-        ! call N(0, 1) generator
-        call box_mullerp(np, normvec)
-
-        ! use the diffusion coeff of the relevant cell, based on bin value
-        p(alive)%loc = p(alive)%loc + sqrt(2.0d0 * D(p(alive)%bin) * dt) * normvec
-    end subroutine diffuse
-
-    ! relfective lower boundary
-    subroutine reflectlow(p, low, alive)
-        type(mparticle),  intent(inout) :: p(:) ! mobile particle array
-        double precision, intent(in   ) :: low ! lower spatial boundary
-        integer,          intent(in   ) :: alive(:)
-            ! array of indices of active particles
-
-        ! if particle has exited lower boundary, flip the negative location
-        ! to the same positive value
-        where (p(alive)%loc < low) p(alive)%loc = -p(alive)%loc
-    end subroutine reflectlow
-
-    ! absorbing upper boundary
-    subroutine absorbhigh(p, high, alive)
-        type(mparticle),  intent(inout) :: p(:) ! mobile particle array
-        double precision, intent(in   ) :: high ! upper spatial boundary
-        integer,          intent(in   ) :: alive(:)
-            ! array of indices of active particles
-
-        ! if particle has exited upper boundary, make the particle inactive
-        ! also, make bin and loc -999 to catch any errors
-        where (p(alive)%loc > high) p(alive)%active = .false.
-        where (p(alive)%loc > high) p(alive)%bin = -999
-        where (p(alive)%loc > high) p(alive)%loc = -999
-    end subroutine absorbhigh
-
-    ! since PHREEQCRM can't accept the particle array as input, this subroutine
-    ! assigns the values in the 2D concs array to its corresponding immobile
-    ! particle
-    subroutine concs_to_iparts(c, p, np)
-        double precision, intent(in   ) :: c(:, :)
-            ! 2D concentration array used by PHREEQCRM
-        type(iparticle),  intent(inout) :: p(:) ! immobile particle array
-        integer,          intent(in   ) :: np ! number of immobile particles
-        integer                         :: i ! iteration variable
-
-        do i = 1, np
-            p(i)%concs = c(i, :)
-        enddo
-    end subroutine concs_to_iparts
-
-    ! this does the opposite of above
-    subroutine iparts_to_concs(c, p, np)
-        double precision, intent(inout) :: c(:, :)
-            ! 2D concentration array used by PHREEQCRM
-        type(iparticle),  intent(in   ) :: p(:) ! immobile particle array
-        integer,          intent(in   ) :: np ! number of immobile particles
-        integer                         :: i ! iteration variable
-
-        do i = 1, np
-            c(i, :) = p(i)%concs
-        enddo
-    end subroutine iparts_to_concs
-
     ! this subroutine does the probabilistic mass balancing according to the
     ! algorithm set forth in Benson and Bolster, "Arbitrarily complex reactions
     ! on particles," WRR 2016
-    subroutine mass_balance(ip, mp, na, alive, ni, D, dt, omega)
-        type(iparticle),  intent(inout) :: ip(:) ! immobile particle array
-        type(mparticle),  intent(inout) :: mp(:) ! mobile particle array
+    subroutine mix(imp, pat, na, alive, ni, D, dt, omega)
+        type(particle),  intent(inout) :: pat(:) ! immobile particle array
+        type(imparticle),  intent(inout) :: imp(:) ! mobile particle array
         integer,          intent(in   ) :: na, alive(:), ni
             ! number and array of indices of active mobile particles and number
             ! of immobile particles
         double precision, intent(in   ) :: D(:), dt, omega
             ! diffusion coefficient array, time step, and domain length
         type(kdtree2), pointer          :: tree ! this is the KD tree
-        integer                         :: ntot, dim = 1, aindex, bindex, i, j
+        integer                         :: ntot, dim = 3, aindex, bindex, i, j
             ! total number of particles (active mobile + immobile), number
             ! of spatial dimensions, index of 'B' particle for mass balance loop,
             ! and a couple of loop interators
             !****Note: hard coded one spatial dimension
-        real(kdkind)                    :: locs(na + ni), r2
+        real(kdkind)                    :: locs(na + ni,dim), r2
             ! array holding locations of immobile and active immobile particles
             ! and value of squared search radius for KD search
         type(index_array), allocatable  :: closeguys(:)
