@@ -190,6 +190,7 @@ PROGRAM RWHET
 ! comment this line to compile on non-windows 
 !USE DFPORT
 use global
+use RPT-mod
 implicit none
 !
 ! dt                                  - current time step

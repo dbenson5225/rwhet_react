@@ -1,5 +1,5 @@
 !  Modified from Mike Schmidt by David Benson for inclusion into Reactive RWHet
-!  For now, do not include interface to Phceeqc.
+!  For now, do not include interface to Phreeqc.
 
 module RPT_mod
     use global                      ! From rwhet
