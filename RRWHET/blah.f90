@@ -1876,7 +1876,7 @@ do; if(.not.(curtime.lt.tmax))exit
   if(np.ne.0)call split(pat,cat,bounds,por,ret)
 ! DAB put in mixing subroutine call here
 !  Right now, anticipating mpi and/or openmp calls, we will pass minimal amounts of info
-!  Hence, only transferring vectors with particle indicies, locations, and distances.
+!  Hence, only transferring vectors with particle indices, locations, and distances.
 
     nactive = count(pat%active)
     allocate (alive(nactive)) ! maybe preallocate to avoid repeatedly doing this
