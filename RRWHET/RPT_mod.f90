@@ -74,16 +74,17 @@ module RPT_mod
     ! this subroutine does the probabilistic mass balancing according to the
     ! algorithm set forth in Benson and Bolster, "Arbitrarily complex reactions
     ! on particles," WRR 2016
-    subroutine mix(imp, pat, na, alive, ni, D, dt, omega)
+    subroutine mix_particles(imp, pat, na, alive, ni, ddiff, dt, omega)
         type(particle),  intent(inout) :: pat(:) ! immobile particle array
         type(imparticle),  intent(inout) :: imp(:) ! mobile particle array
+        type(cell), intent(in) :: cat(nx,ny,nz)   ! cell info (incl. diff)
         integer,          intent(in   ) :: na, alive(:), ni
             ! number and array of indices of active mobile particles and number
             ! of immobile particles
-        double precision, intent(in   ) :: D(:), dt, omega
+        double precision, intent(in   ) :: ddiff(:), dt, omega
             ! diffusion coefficient array, time step, and domain length
         type(kdtree2), pointer          :: tree ! this is the KD tree
-        integer                         :: ntot, dim = 3, aindex, bindex, i, j
+        integer                         :: ntot, dim = 3, aindex, bindex, i, j, k, iloop,
             ! total number of particles (active mobile + immobile), number
             ! of spatial dimensions, index of 'B' particle for mass balance loop,
             ! and a couple of loop interators
@@ -97,7 +98,10 @@ module RPT_mod
             ! this holds the distances to the corresponding nearby particle
         double precision                :: ds, const(na), denom(na), v_s,&
                                            dmass(nspec), dmA(nspec), denom1,&
-                                           const1
+                                           const1, D(na)
+        logical::im_transfer
+        im_transfer=.false.   ! For now, mixing only among mobile particles
+
         ! ds, const, and demom are used in v(s) calculation but are precalculated for
         ! efficiency. v_s is encounter probability between particles
         ! (technically, it is v(s)ds). dmass is the mass change for a particle pair
@@ -109,11 +113,12 @@ module RPT_mod
         ntot = na + ni
         ! build locs array--immobile particles will be at the beginning of the
         ! array, and mobile will be at the end
-        locs(1 : ni) = real(ip%loc, kdkind)
-        locs(ni + 1 : ntot) = real(mp(alive)%loc, kdkind)
+        locs(1 : ni) = real(imp%loc, kdkind)
+        locs(ni + 1 : ntot) = real(pat(alive)%loc, kdkind)
         ! calculate interaction distance to be numsd standard deviations of the
         ! Brownian Motion process--r2 is this distance squared
         ! ****NOTE: numsd is a global variable that is hard-coded above
+
         r2 = (real(numsd, kdkind) * sqrt(2.0_kdkind * maxval(real(D, kdkind)) *&
                                          real(dt, kdkind)))**2
 
@@ -124,6 +129,12 @@ module RPT_mod
         ! NOTE: this search returns the SQUARED distance between two points
             ! also, the point itself is included in the closeguys list
         call kdtree2_destroy(tree)
+
+!  This is super slow - I should find a better place to get each particle's Diff
+   do iloop=1,na
+          i=pat(1,ip)%ijk(1); j=pat(1,ip)%ijk(2); k=pat(1,ip)%ijk(3) 
+          D(iloop)=ddiff(cat(i,j,k)%zone)
+   enddo
 
         ! do i = 1, ni
         !     print *, 'i = ', i, 'closeguys = ', closeguys(i)%indices
@@ -140,7 +151,8 @@ module RPT_mod
         ! ****should immobile particles be a part of this calculation?
         ds = omega / dble(ntot)
             ! ****NOTE: this is average inter-particle spacing of alive particles
-        denom = -4.0d0 * D(mp(alive)%bin) * dt
+        denom = -4.0d0 * D * dt
+!        denom = -4.0d0 * D(mp(alive)%bin) * dt
             ! denom is part of the normalizing constant as well as the
             ! the denominator of the exponential argument
         const = ds / sqrt(pi * (-denom))
@@ -153,6 +165,7 @@ module RPT_mod
             ! i.e., particle x which is alive(i) has denom(i) and const(i)
 
         ! loop over immobile particles
+if(im_transfer) then
         do i = 1, ni ! immobile particle index--this is the 'A' particle loop
             ! if reducing mass of A particle after B loop set dmA to zero
             ! dmA = 0.0d0
@@ -194,6 +207,7 @@ module RPT_mod
             ! subtract the saved up dmA from the A particle
             ! ip(i)%concs = ip(i)%concs - dmA
         enddo
+endif   ! Mass transfer with immobile particles?
 
         ! loop over mobile particles
         do i = ni + 1, ntot ! this is the 'A' particle loop

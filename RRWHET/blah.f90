@@ -190,7 +190,7 @@ PROGRAM RWHET
 ! comment this line to compile on non-windows 
 !USE DFPORT
 use global
-use RPT-mod
+use RPT_mod
 implicit none
 !
 ! dt                                  - current time step
@@ -1833,6 +1833,10 @@ type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(1:maxbnd)
 type (recharge):: rech(nx,ny)
 type (constant_head):: chd(nx,ny,nz)
+integer             :: indices(maxnp), lastinject
+integer, allocatable:: alive(:)   ! array for indexing to live mobile particles
+integer             :: nactive ! number of active mobile particles
+
 integer:: imawupdt,i,j,k
 integer:: source(maxsource),opc(nopc),outunit(nopc+1)
 real:: sngldt
@@ -1843,6 +1847,7 @@ character (len=80) outfname(nopc)
 !.external subroutine to move particles
 external movep
 !.time loop
+indices = (/(i, i = 1, nptot)/) ! this is for easy array-indexing of pat
 dtminimum=dtinit
 write(*,*)'  Current Time   # of Particles '
 write(*,*)' --------------  -------------- '
@@ -1870,17 +1875,16 @@ do; if(.not.(curtime.lt.tmax))exit
   if(ibug.ge.1)then;string(1)=' CALL SPLIT!';call debug(ibugout,string,nline);endif
   if(np.ne.0)call split(pat,cat,bounds,por,ret)
 ! DAB put in mixing subroutine call here
+!  Right now, anticipating mpi and/or openmp calls, we will pass minimal amounts of info
+!  Hence, only transferring vectors with particle indicies, locations, and distances.
 
     nactive = count(pat%active)
     allocate (alive(nactive)) ! maybe preallocate to avoid repeatedly doing this
-    alive = pack(indices, mparts%active)
-    mparts(alive)%bin = floor(mparts(alive)%loc/dxv) + 1
+    alive = pack(indices, pat%active)
+  
+    call mix_particles(imp, pat, nactive, alive, nipart, ddiff, dt, omega)
 
-    call kdtree(
-
-    call mix_particles(imp, pat, nactive, alive, nipart, D, dt, omega)
-
-    call abc(imp,pat)
+    call abc_react(imp,pat)
 
 ! DAB put in reaction subroutine here 
 
