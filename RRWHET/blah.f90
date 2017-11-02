@@ -80,18 +80,20 @@ module global
   end type sample            
   type particle
     real:: xyz(3),birth_day,death_day !,birth_place(3)  ! location,birth time
-    double precision:: pmass(nspec)             ! mass of each species
+    double precision:: pmass(nspec)         ! mass of each species
+    double precision:: ds		    ! effective volume of the particle
     integer*2:: ijk(3)                      ! cell location
     integer:: pnumber                       ! cell location
-    logical*2:: active                        ! active particle?
+    logical*2:: active                      ! active particle?
   end type particle
 
   type imparticle
     real:: xyz(3),birth_day,death_day !,birth_place(3)  ! location,birth time
-    double precision:: pmass(inspec)             ! mass of each immobile species
+    double precision:: pmass(inspec)        ! mass of each immobile species
+    double precision:: ds                   ! effective volume of particle
     integer*2:: ijk(3)                      ! cell location
     integer:: pnumber                       ! cell location
-    logical*2:: active                        ! active particle?
+    logical*2:: active                      ! active particle?
   end type imparticle
 
 
@@ -1882,7 +1884,7 @@ do; if(.not.(curtime.lt.tmax))exit
     allocate (alive(nactive)) ! maybe preallocate to avoid repeatedly doing this
     alive = pack(indices, pat%active)
   
-    call mix_particles(imp, pat, nactive, alive, nipart, ddiff, dt, omega)
+    call mix_particles(imp, pat, cat, ddiff, dt)
 
     call abc_react(imp,pat)
 
