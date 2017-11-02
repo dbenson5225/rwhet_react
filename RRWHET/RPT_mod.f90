@@ -14,8 +14,8 @@ module RPT_mod
     ! type selectout_list
     !     character(:), allocatable :: head
     ! end type
-    integer, parameter          :: sp = kind(1.0), dp = kind(1.d0)
-    double precision, parameter :: pi = 4.0d0 * atan(1.0d0)
+    integer, parameter           :: sp = kind(1.0), dp = kind(1.d0)
+    double precision, parameter  :: pi = 4.0d0 * atan(1.0d0)
  !   integer, parameter          :: nspec = 8, numsd = 3, num_alloc = 1e4
         ! *****hard-coded nspec--fix to make this general*****
         ! numsd is distances over which particle reactions are considered
@@ -76,7 +76,7 @@ module RPT_mod
     ! on particles," WRR 2016
     subroutine mix_particles(imp, pat, na, alive, ni, ddiff, dt, omega)
         type(particle),  intent(inout) :: pat(:) ! immobile particle array
-        type(imparticle),  intent(inout) :: imp(:) ! mobile particle array
+        type(imparticle),intent(inout) :: imp(:) ! mobile particle array
         type(cell), intent(in) :: cat(nx,ny,nz)   ! cell info (incl. diff)
         integer,          intent(in   ) :: na, alive(:), ni
             ! number and array of indices of active mobile particles and number
@@ -84,7 +84,8 @@ module RPT_mod
         double precision, intent(in   ) :: ddiff(:), dt, omega
             ! diffusion coefficient array, time step, and domain length
         type(kdtree2), pointer          :: tree ! this is the KD tree
-        integer                         :: ntot, dim = 3, aindex, bindex, i, j, k, iloop,
+        integer                         :: ntot, dim = 3, aindex, bindex,&
+                                           i, j, k, iloop, jloop
             ! total number of particles (active mobile + immobile), number
             ! of spatial dimensions, index of 'B' particle for mass balance loop,
             ! and a couple of loop interators
@@ -96,9 +97,12 @@ module RPT_mod
             ! this holds the indices of nearby particles
         type(dist_array), allocatable   :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
-        double precision                :: ds, const(na), denom(na), v_s,&
-                                           dmass(nspec), dmA(nspec), denom1,&
-                                           const1, D(na)
+!        double precision                :: ds, const(na), denom(na), v_s,&
+!                                           dmass(nspec), dmA(nspec), denom1,&
+!                                           const1, D(na)
+        double precision, allocatable   :: const(:),denom(:),dmass(:),dmA(:),D(:)
+        double precision                :: ds,v_s,denom1,const1
+ 
         logical::im_transfer
         im_transfer=.false.   ! For now, mixing only among mobile particles
 
@@ -112,12 +116,24 @@ module RPT_mod
         ! calculate total number of particles to be considered for mass balance
 
      ntot = na
-     if(im_transfer) ntot=na+ni
+     locs(1 : na) = real(pat(alive)%xyz, kdkind)
+
+     if(im_transfer) then
+         ntot=na+ni
+         locs(ni + 1 : ntot) = real(imp%xyz, kdkind)
+     endif
+
+     allocate(const(ntot),denom(ntot),D(ntot))
+     D=0.0D0
+!  This seems super slow - I should find a better place to get each particle's Diff?
+   do iloop=1,na
+          i=pat(1,ip)%ijk(1); j=pat(1,ip)%ijk(2); k=pat(1,ip)%ijk(3) 
+          D(iloop)=ddiff(cat(i,j,k)%zone)
+   enddo
 
         ! build locs array--mobile particles will be at the beginning of the
         ! array, and mobile will be at the end
-     locs(1 : na) = real(pat(alive)%xyz, kdkind)
-     if(im_transfer)locs(ni + 1 : ntot) = real(imp%xyz, kdkind)
+
         ! calculate interaction distance to be numsd standard deviations of the
         ! Brownian Motion process--r2 is this distance squared
         ! ****NOTE: numsd is a global variable that is hard-coded above
@@ -127,28 +143,14 @@ module RPT_mod
 
         ! build the KD tree and search it
         ! ****NOTE: num_alloc is a global variable that is hard-coded above
+
         call maketree(tree, locs, dim, ntot)
         call search(ntot, dim, tree, r2, num_alloc, closeguys, close_dists)
+
         ! NOTE: this search returns the SQUARED distance between two points
             ! also, the point itself is included in the closeguys list
+
         call kdtree2_destroy(tree)
-
-!  This seems super slow - I should find a better place to get each particle's Diff?
-   do iloop=1,na
-          i=pat(1,ip)%ijk(1); j=pat(1,ip)%ijk(2); k=pat(1,ip)%ijk(3) 
-          D(iloop)=ddiff(cat(i,j,k)%zone)
-   enddo
-
-        ! do i = 1, ni
-        !     print *, 'i = ', i, 'closeguys = ', closeguys(i)%indices
-        !     do j = 1, size(closeguys(i)%indices)
-        !         print *, 'closeguys(i)%indices(j) = ', closeguys(i)%indices(j)
-        !         print *, 'loc A, loc B = ', locs(i), locs(closeguys(i)%indices(j))
-        !         print *, 'distance = ', sqrt(close_dists(i)%dists(j))
-        !         ! pause
-        !     enddo
-        ! enddo
-        ! pause
 
         ! calculate ds, the 'support volume' of a particle
         ! ****should immobile particles be a part of this calculation?
@@ -167,55 +169,11 @@ module RPT_mod
             ! array--not the index in the mp array
             ! i.e., particle x which is alive(i) has denom(i) and const(i)
 
-        ! loop over immobile particles
-if(im_transfer) then  ! DAB I have not yet fixed this
-print*,' DAB Immobile mass transfer not yet done correctly!!!'
-        do i = 1, ni ! immobile particle index--this is the 'A' particle loop
-            ! if reducing mass of A particle after B loop set dmA to zero
-            ! dmA = 0.0d0
-            do j = 1, size(closeguys(i)%indices) ! mobile particle loop
-                ! this is the 'B' particle loop
-                ! note that the closeguys array is indexed to the loc array,
-                ! and thus its true index in the mp array is calculated below
-
-                ! current B particle's index in locs array
-                if (closeguys(i)%indices(j) <= ni) cycle
-                    ! if B is an immobile particle, skip this calculation
-                    ! also prevents calculating with self
-                ! make bindex equal to index in alive array so as to correspond
-                ! to the const and denom arrays
-                ! i.e., alive(bindex) = index in mp array, and const(bindex) =
-                ! constant for particle alive(bindex)
-                bindex = closeguys(i)%indices(j) - ni
-                ! ****get rid of this when confident it's working****
-                if (bindex > na .or. bindex < 1) then
-                    print *, '****ERROR IN INDEX CALC****'
-                    print *, 'bindex = ', bindex
-                endif
-
-                ! calculate encounter probability for A and B particle pair
-                ! NOTE: distance is not squared since the search already
-                ! returned the squared value
-                v_s = const(bindex) * exp(close_dists(i)%dists(j)/denom(bindex))
-                ! calculate change in mass for A and B particle pair
-                dmass = 0.5d0 * (ip(i)%concs - mp(alive(bindex))%concs) * v_s
-                ! change mass of A particle
-                ! ****should it be changed here or add it up and do it after?****
-                ip(i)%concs = ip(i)%concs - dmass
-                ! save mass change of A particle until after B loop, so add up
-                ! all of the dmasses
-                ! dmA = dmA + dmass
-                ! change mass of B particle
-                mp(alive(bindex))%concs = mp(alive(bindex))%concs + dmass
-            enddo
-            ! subtract the saved up dmA from the A particle
-            ! ip(i)%concs = ip(i)%concs - dmA
-        enddo
-endif   ! Mass transfer with immobile particles?
-
         ! loop over mobile particles
+    allocate(dmass(nspec))
+
         do iloop = 1,na ! this is the 'A' particle loop
-            ! make aindex equal to index in mp array
+            ! make aindex equal to index in mobile pat array
             aindex = alive(iloop)
             ! if reducing mass of A particle after B loop set dmA to zero
             ! dmA = 0.0d0
@@ -229,14 +187,14 @@ endif   ! Mass transfer with immobile particles?
                     ! particles, as well as double counting interactions
 
                 ! make bindex equal to index in alive array
-                ! i.e., alive(bindex) = index in mp array
+                ! i.e., alive(bindex) = index in pat array
                 ! ****get rid of this when confident it's working****
-                bindex = closeguys(iloop)%indices(jloop) - ni
+                bindex = closeguys(iloop)%indices(jloop) 
                 if (bindex > na .or. bindex < 1) then
                     print *, '****ERROR IN INDEX CALC****'
                     print *, 'bindex = ', bindex
                 endif
-                ! make bindex equal to index in mp array
+                ! make bindex equal to index in pat array
 
                 bindex = alive(closeguys(iloop)%indices(jloop))  ! DAB .. right?
 !                bindex = alive(closeguys(iloop)%indices(jloop) - ni)
@@ -260,17 +218,62 @@ endif   ! Mass transfer with immobile particles?
                 ! ordering scheme
                 ! ****should it be changed here or add it up and do it after?****
                 pat(aindex)%pmass = pat(aindex)%pmass - dmass
+                ! change mass of B particle
+                pat(bindex)%pmass = pat(bindex)%pmass + dmass
+            enddo
+         enddo
+
+!   Loop over immobile particles
+
+! if(im_transfer) then  ! DAB I have not yet fixed this
+! print*,' DAB Immobile mass transfer not yet done correctly!!!'
+
+!        allocate(dmass(inspec))
+!        do iloop = ni+1,ntot ! immobile particle index--this is the 'A' particle loop
+            ! if reducing mass of A particle after B loop set dmA to zero
+
+!            do jloop = 1, size(closeguys(i)%indices) ! mobile particle loop
+                ! this is the 'B' particle loop
+                ! note that the closeguys array is indexed to the loc array,
+                ! and thus its true index in the mp array is calculated below
+
+                ! current B particle's index in locs array
+!                if (closeguys(iloop)%indices(jloop) <= ni) cycle
+                    ! if B is an immobile particle, skip this calculation
+                    ! also prevents calculating with self
+                ! make bindex equal to index in alive array so as to correspond
+                ! to the const and denom arrays
+                ! i.e., alive(bindex) = index in mp array, and const(bindex) =
+                ! constant for particle alive(bindex)
+!               bindex = closeguys(i)%indices(j) - ni
+                ! ****get rid of this when confident it's working****
+!                if (bindex > na .or. bindex < 1) then
+!                    print *, '****ERROR IN INDEX CALC****'
+!                    print *, 'bindex = ', bindex
+!                endif
+
+                ! calculate encounter probability for A and B particle pair
+                ! NOTE: distance is not squared since the search already
+                ! returned the squared value
+!                v_s = const(bindex) * exp(close_dists(i)%dists(j)/denom(bindex))
+                ! calculate change in mass for A and B particle pair
+!                dmass = 0.5d0 * (ip(i)%concs - mp(alive(bindex))%concs) * v_s
+                ! change mass of A particle
+                ! ****should it be changed here or add it up and do it after?****
+!                ip(i)%concs = ip(i)%concs - dmass
                 ! save mass change of A particle until after B loop, so add up
                 ! all of the dmasses
                 ! dmA = dmA + dmass
                 ! change mass of B particle
-                pat(bindex)%pmass = pat(bindex)%pmass + dmass
-            enddo
+!                mp(alive(bindex))%concs = mp(alive(bindex))%concs + dmass
+!            enddo
             ! subtract the saved up dmA from the A particle
-            ! mp(aindex)%concs = mp(aindex)%concs - dmA
-        enddo
-        deallocate (closeguys, close_dists)
-    end subroutine mass_balance
+            ! ip(i)%concs = ip(i)%concs - dmA
+!        enddo
+!   deallocate(dmA)
+!endif   ! Mass transfer with immobile particles?
+       deallocate (closeguys, close_dists)
+    end subroutine mix_particles
 
 subroutine abc_react(imp,pat)
 
