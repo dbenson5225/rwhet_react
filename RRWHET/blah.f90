@@ -1835,6 +1835,11 @@ type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(1:maxbnd)
 type (recharge):: rech(nx,ny)
 type (constant_head):: chd(nx,ny,nz)
+type(index_array), intent(inout), allocatable  :: closeguys(:)
+            ! this holds the indices of nearby particles
+type(dist_array), intent(inout), allocatable   :: close_dists(:)
+            ! this holds the distances to the corresponding nearby particle
+
 integer             :: indices(maxnp), lastinject
 integer, allocatable:: alive(:)   ! array for indexing to live mobile particles
 integer             :: nactive ! number of active mobile particles
@@ -1884,9 +1889,9 @@ do; if(.not.(curtime.lt.tmax))exit
     allocate (alive(nactive)) ! maybe preallocate to avoid repeatedly doing this
     alive = pack(indices, pat%active)
   
-    call mix_particles(imp, pat, cat, ddiff, dt)
+    call mix_particles(imp,pat,cat,ddiff,dt,closeguys,close_dist)
 
-    call abc_react(imp,pat)
+    call abc_react(imp,pat,closeguys,close_dist)
 
 ! DAB put in reaction subroutine here 
 

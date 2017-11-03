@@ -16,37 +16,10 @@ module RPT_mod
     ! end type
     integer, parameter           :: sp = kind(1.0), dp = kind(1.d0)
     double precision, parameter  :: pi = 4.0d0 * atan(1.0d0)
- !   integer, parameter          :: nspec = 8, numsd = 3, num_alloc = 1e4
-        ! *****hard-coded nspec--fix to make this general*****
+    integer, parameter          :: numsd = 3
         ! numsd is distances over which particle reactions are considered
-        ! num_alloc is the maximum number of nearby particles expected to be
-            ! found--may need to adust this up or calculate on the fly in
-            ! mass_balance() subroutine, as i don't love having it hard-coded
-
-    ! mobile particle type
-    ! NOTE: these are currently for a 1D problem
-!    type mparticle
-!        double precision :: loc ! real-valued spatial location
-!        double precision :: concs(nspec) ! vector of chemical concentrations
-        ! *****hard-coded nspec--fix to make this general*****
-!        logical          :: active
-            ! indicates whether particle is active and within the domain
-!        integer          :: bin
-            ! used to indicate which spatial gridpoint a particle resides within
-            ! i keep it with the particle to avoid calculating multiple times
-            ! in a single time step
-!    end type
-    ! immobile particle type
-!    type iparticle
-!        double precision :: loc
-!        double precision :: concs(nspec)
-        ! *****hard-coded nspec--fix to make this general*****
-        ! logical        :: active
-        ! integer        :: bin
-!    end type
-
+ 
     ! a couple of derived types for the kd tree search
-
     ! holds indices of nearby particles
     type index_array
         integer, allocatable :: indices(:)
@@ -74,7 +47,7 @@ module RPT_mod
     ! this subroutine does the probabilistic mass balancing according to the
     ! algorithm set forth in Benson and Bolster, "Arbitrarily complex reactions
     ! on particles," WRR 2016
-    subroutine mix_particles(imp, pat, cat, ddiff, dt)
+    subroutine mix_particles(imp, pat, cat, ddiff, dt, closeguys, close_dist)
         type(particle),  intent(inout) :: pat(:) ! immobile particle array
         type(imparticle),intent(inout) :: imp(:) ! mobile particle array
         type(cell), intent(in)         :: cat(nx,ny,nz)   ! cell info (incl. diff)
@@ -84,7 +57,7 @@ module RPT_mod
         integer           :: na, alive(:), ni
             ! number and array of indices of active mobile particles and number
             ! of immobile particles
-        integer                         :: ntot, dim = 3, aindex, bindex,&
+        integer :: ntot, dim = 3, aindex, bindex,&
                                            i, j, k, iloop, jloop
             ! total number of particles (active mobile + immobile), number
             ! of spatial dimensions, index of 'B' particle for mass balance loop,
@@ -97,11 +70,11 @@ module RPT_mod
             ! this holds the indices of nearby particles
         type(dist_array), intent(inout), allocatable   :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
-!        double precision                :: ds, const(na), denom(na), v_s,&
+!        double precision                :: const(na), denom(na), v_s,&
 !                                           dmass(nspec), dmA(nspec), denom1,&
 !                                           const1, D(na)
         double precision, allocatable   :: const(:),denom(:),dmass(:),dmA(:),D(:)
-        double precision                :: ds,v_s,denom1,const1
+        double precision                :: v_s,denom1,const1
  
         logical::im_transfer
         im_transfer=.false.   ! For now, mixing only among mobile particles
@@ -134,7 +107,7 @@ module RPT_mod
      D=0.0D0
 !  This seems super slow - I should find a better place to get each particle's Diff?
    do iloop=1,na
-          i=pat(1,ip)%ijk(1); j=pat(1,ip)%ijk(2); k=pat(1,ip)%ijk(3) 
+          i=pat(iloop)%ijk(1); j=pat(iloop)%ijk(2); k=pat(iloop)%ijk(3) 
           D(iloop)=ddiff(cat(i,j,k)%zone)
    enddo
 
@@ -189,8 +162,8 @@ module RPT_mod
                 ! current B particle's index in locs array
                 if (closeguys(iloop)%indices(jloop) <= iloop .or. &
                     closeguys(iloop)%indices(jloop) > na) cycle
-                    ! want to ignore any indices lower than iloop to avoid double 
-                    ! counting interactions as well as >na, which are immobile particles 
+            ! want to ignore any indices lower than iloop to avoid double 
+            ! counting interactions as well as >na, which are immobile particles 
 
                 ! make bindex equal to index in alive array
                 ! i.e., alive(bindex) = index in pat array
@@ -210,7 +183,7 @@ module RPT_mod
                 ! precalculating seems unnecessary, since that would require
                 ! considering every mobile particle pair, and not every pair
                 ! will interact
-                denom1 = -4.0d0 * (D(iloop)+D(jloop)) * dt  ! DAB sent D(na) to this subroutine
+                denom1 = -4.0d0 * (D(iloop)+D(jloop)) * dt  
 !                denom1 = -4.0d0 * (D(mp(aindex)%bin)+D(mp(bindex)%bin)) * dt
                 const1 = ds(iloop) / sqrt(pi * (-denom1))
 
@@ -296,15 +269,19 @@ subroutine abc_react(imp,pat,closeguys,close_dists)
         type(dist_array), intent(in), :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
         integer:: iloop
+        double precision kr,kf,stoA,stoB,stoC,conc(nspec),iconc(inspec),ds(:)
 
+ds=pat%ds
 !  Loop through mobiles
+na = count(pat%active)
  
 do iloop=1,na
+          
 
 enddo
 
 
-       deallocate (closeguys, close_dists)
+deallocate (closeguys, close_dists)
 
 end subroutine abc_react
 
