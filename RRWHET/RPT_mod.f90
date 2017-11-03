@@ -256,7 +256,7 @@ module RPT_mod
 
 subroutine abc_react(imp,pat,closeguys,close_dists)
 
-!  This subroutine will have reaction nA (aq) + mB (aq) <--> pC (solid) for debugging
+!  This subroutine will have reaction mA (aq) + nB (aq) <--> pC (solid) for debugging
 !  The forward rxn has hard-coded rate kf, backwards kr
 !  Any solid made will be put on nearby imm particles. If none near, create one
 !  If solid dissolves, place on nearby pats.  If none near, create one.
@@ -276,7 +276,10 @@ ds=pat%ds
 na = count(pat%active)
  
 do iloop=1,na
-          
+
+     conc=(pat(iloop)%pmass)/pat(iloop)%ds
+! matlab     dm = ktherm*ds*dt*(massApp/A0)*((A0/massApp)*X(:,2))**msto.*((B0/massBpp)*X(:,3))**nsto;
+         
 
 enddo
 
