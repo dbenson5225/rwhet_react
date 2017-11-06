@@ -52,30 +52,29 @@ module RPT_mod
         type(imparticle),intent(inout) :: imp(:) ! mobile particle array
         type(cell), intent(in)         :: cat(nx,ny,nz)   ! cell info (incl. diff)
         type(kdtree2), pointer         :: tree ! this is the KD tree
-        double precision, intent(out)  :: Dloc(:)    ! local D at pat particles
         double precision, intent(in   ):: ddiff(:), dt
-        double precision :: ds(:)
-        integer           :: na, alive(:), ni
+        double precision               :: ds(:)
+        integer                        :: na, alive(:), ni
             ! number and array of indices of active mobile particles and number
             ! of immobile particles
-        integer :: ntot, dim = 3, aindex, bindex,&
+        integer                        :: ntot, dim = 3, aindex, bindex,&
                                            i, j, k, iloop, jloop
             ! total number of particles (active mobile + immobile), number
             ! of spatial dimensions, index of 'B' particle for mass balance loop,
             ! and a couple of loop iterators
             !****Note: hard coded one spatial dimension
-        real(kdkind)                    :: locs(na + ni,dim), r2
+        real(kdkind)                   :: locs(na + ni,dim), r2
             ! array holding locations of immobile and active immobile particles
             ! and value of squared search radius for KD search
         type(index_array), intent(inout), allocatable  :: closeguys(:)
             ! this holds the indices of nearby particles
         type(dist_array), intent(inout), allocatable   :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
-!        double precision                :: const(na), denom(na), v_s,&
+!        double precision              :: const(na), denom(na), v_s,&
 !                                           dmass(nspec), dmA(nspec), denom1,&
 !                                           const1, D(na)
-        double precision, allocatable   :: const(:),denom(:),dmass(:),dmA(:),D(:)
-        double precision                :: v_s,denom1,const1
+        double precision, allocatable  :: const(:),denom(:),dmass(:),dmA(:),Dloc(:)
+        double precision               :: v_s,denom1,const1
  
         logical::im_transfer
         im_transfer=.false.   ! For now, mixing only among mobile particles
@@ -88,30 +87,32 @@ module RPT_mod
         ! denom1 and const1 are scalar versions of denom and const
 
         ! calculate total number of particles to be considered for mass balance
+    indices = (/(iloop, iloop = 1, na)/) ! this is for easy array-indexing of pat
     na = count(pat%active)
-    allocate (alive(na)) ! maybe preallocate to avoid repeatedly doing this
-    allocate (Dloc(na))
-    alive = pack(indices, pat%active)
     ni = count(imp%active)
-
-     ntot = na+ni
+    allocate (alive(na)) ! maybe preallocate to avoid repeatedly doing this
+    allocate (Dloc(na),denom(na),const(na))
+    alive = pack(indices, pat%active)
+    ntot = na+ni
         ! build locs array--mobile particles will be at the beginning of the
         ! array, and immobile will be at the end
-     locs(1 : na) = real(pat(alive)%xyz, kdkind)
-     locs(ni + 1 : ntot) = real(imp(alive)%xyz, kdkind)
-     ds(1:na)=real(pat(alive)%ds, kdkind)
+    locs(1 : na) = real(pat(alive)%xyz, kdkind)
+    locs(ni + 1 : ntot) = real(imp(alive)%xyz, kdkind)
+    ds(1:na)=real(pat(alive)%ds, kdkind)
  
-     if(im_transfer) then
-         ntot=na+ni
-     endif
+!     if(im_transfer) then
+!         ntot=na+ni
+!     endif
 
      allocate(const(ntot),denom(ntot),D(ntot))
      Dloc=0.0D0
 !  This seems super slow - I should find a better place to get each particle's Diff?
 !  DAB Remember to subtract this Dloc from the random walk part !!!!
 !  Dloc should contain Dm and possibly dtran*|v|
+
    do iloop=1,na
-          i=pat(iloop)%ijk(1); j=pat(iloop)%ijk(2); k=pat(iloop)%ijk(3) 
+          aindex=alive(iloop)
+          i=pat(aindex)%ijk(1); j=pat(aindex)%ijk(2); k=pat(aindex)%ijk(3) 
           Dloc(iloop)=ddiff(cat(i,j,k)%zone)
    enddo
 !
@@ -138,7 +139,6 @@ module RPT_mod
 !        ds = omega / dble(ntot)
             ! ****NOTE: this is average inter-particle spacing of alive particles
         denom = -4.0d0 * Dloc * dt    ! This should be a vector na big
-!        denom = -4.0d0 * D(mp(alive)%bin) * dt
             ! denom is part of the normalizing constant as well as the
             ! the denominator of the exponential argument
         const = ds / sqrt(pi * (-denom))
@@ -167,27 +167,21 @@ module RPT_mod
                     closeguys(iloop)%indices(jloop) > na) cycle
             ! want to ignore any indices lower than iloop to avoid double 
             ! counting interactions as well as >na, which are immobile particles 
-
-                ! make bindex equal to index in alive array
-                ! i.e., alive(bindex) = index in pat array
-                ! ****get rid of this when confident it's working****
-                bindex = closeguys(iloop)%indices(jloop) 
+           
+           bindex = alive(closeguys(iloop)%indices(jloop))  ! DAB .. right?
                 if (bindex > na .or. bindex < 1) then
                     print *, '****ERROR IN INDEX CALC****'
                     print *, 'bindex = ', bindex
                 endif
                 ! make bindex equal to index in pat array
 
-                bindex = alive(closeguys(iloop)%indices(jloop))  ! DAB .. right?
-!                bindex = alive(closeguys(iloop)%indices(jloop) - ni)
-
+ 
                 ! we calculate denom and const on the fly here since A and B
                 ! do not necessarily have the same D value
                 ! precalculating seems unnecessary, since that would require
                 ! considering every mobile particle pair, and not every pair
                 ! will interact
-                denom1 = -4.0d0 * (D(iloop)+D(jloop)) * dt  
-!                denom1 = -4.0d0 * (D(mp(aindex)%bin)+D(mp(bindex)%bin)) * dt
+                denom1 = -4.0d0 * (D(iloop)+D(closeguys(iloop)%indices(jloop))) * dt  
                 const1 = ds(iloop) / sqrt(pi * (-denom1))
 
                 ! calculate encounter probability for A and B particle pair
@@ -274,23 +268,22 @@ subroutine abc_react(imp,pat,closeguys,close_dists,Dloc,dt)
             ! this holds the distances to the corresponding nearby particle
        double precision, intent(in)   :: Dloc(:)
        integer:: iloop,numjs
-       double precision:: kr,kf,stoA,stoB,stoC,conc(nspec),iconc(inspec),ds(:),pmass(:)
+       double precision:: kr,kf,stoA,stoB,stoC,conc(nspec),iconc(inspec),ds(:),pmass()
        double precision:: dm, dmA, dmB, dmC(:), dmAtemp, dmBtemp, v_s(:), totwgt
 
 !  Define stoichiometry here
 stoA=1.d0
 stoB=1.d0
 stoC=1.d0
-allocate(pmass(max(nspec,inspec)))
+allocate(pmass(inspec))
 
 !  ds=pat%ds
-!  Loop through mobiles
 na = count(pat%active)
 ni= count(imp%active)
 allocate v_s(na+ni)  ! Maximum possible size
 v_s=0.d0
 pmass=0.d0 
-do iloop=1,na
+do iloop=1,na   !  These are the mobiles
 
      conc=(pat(iloop)%pmass)/pat(iloop)%ds   
      dm = kf*dt*(conc(1)/ds)**msto*(conc(2)/ds)**nsto
@@ -301,17 +294,14 @@ do iloop=1,na
     
      pat(iloop)%pmass(1)=pat(iloop)%pmass(1)-msto*dm
      pat(iloop)%pmass(2)=pat(iloop)%pmass(2)-nsto*dm
-     dmC(iloop)=stoC*dm 
-                         
-!  need to put this on a solid particle
+     dmC(iloop)=stoC*dm             !  need to put this on a solid particle
 !  If I do it here I lose future paralellism, so beware
-! Find out how many immobile particle are nearby
+!  Find out how many immobile particle are nearby
 !  indys holds the indexes for all particles (1:na then na+1:not)
 !  The index in the imp array is the indy - na
 
      numjs=size(closeguys(iloop)%indices>na)
-     indys(1:numjs)=pack(closeguys(iloop)%indices,closeguys(iloop)%indices>na)     
-     if(numjs.lt.1) then
+      if(numjs.lt.1) then
 ! make an imp here
          i=pat(iloop)%ijk(1); j=pat(iloop)%ijk(2); k=pat(iloop)%ijk(3) 
          x=pat(iloop)%xyz(1); y=pat(iloop)%xyz(2); z=pat(iloop)%xyz(1)
@@ -319,6 +309,7 @@ do iloop=1,na
          call addimp(single(curtime),x,y,z,i,j,k,pmass,imp,cat) 
      else
 ! Place solids on nearby imp particles weighted by prob. of collision
+        indys(1:numjs)=pack(closeguys(iloop)%indices,closeguys(iloop)%indices>na)     
         v_s=0.d0
 
         do jloop = 1, numjs
@@ -336,7 +327,7 @@ do iloop=1,na
         do jloop=1, numjs 
                 weight=v_s(jloop)/totwgt
                 bindex = closeguys(iloop)%indices(indys(jloop)) - na 
-                imp(bindex)%pmass=weight*stoC*pmass
+                imp(bindex)%pmass(1)=weight*stoC*dmC(iloop)
         enddo
 enddo  !!!!  end of loop through mobile reactions and precipitation
 
@@ -356,15 +347,16 @@ enddo
 
 do iloop=1,ni
 
-! find mobile particles to give newly dissolved mass to
+! find close mobile particles to give newly dissolved mass to
+!  Remember that the immobile particles site after ni mobiles in the closeguys array
 
-    numjs=size(closeguys(iloop)%indices<=na)
-    indys(1:numjs)=pack(closeguys(iloop)%indices,closeguys(iloop)%indices<=na)     
+    numjs=size(closeguys(ni+iloop)%indices<=na)
+    indys(1:numjs)=pack(closeguys(ni+iloop)%indices,closeguys(ni+iloop)%indices<=na)     
     if(numjs.lt.1) then
 ! make a new pat here
          i=imp(iloop)%ijk(1); j=imp(iloop)%ijk(2); k=imp(iloop)%ijk(3) 
          x=imp(iloop)%xyz(1); y=imp(iloop)%xyz(2); z=imp(iloop)%xyz(1)
-         pmass(1)=dmA; pmass(2)=dmB    ! etc. etc.
+         pmass(1)=dmA(iloop); pmass(2)=dmB(iloop)    ! etc. etc. if needed
          call addp(single(curtime),x,y,z,i,j,k,pmass,pat,cat) 
      else
 ! Place dissolved solids on nearby pat particles weighted by prob. of collision
@@ -372,25 +364,25 @@ do iloop=1,ni
 
         do jloop = 1, numjs
 
-                denom1 = -4.0d0 * (D(iloop)) * dt  
+                denom1 = -4.0d0 * (D(indys(jloop))) * dt  
 
                 ! calculate encounter probability for A and B particle pair
                 ! NOTE: distance is not squared since the search already
                 ! returned the squared value
 
-                v_s(jloop) = exp(close_dists(iloop)%dists(indys(jloop))/denom1)
+                v_s(jloop) = exp(close_dists(ni+iloop)%dists(indys(jloop))/denom1)
 
         enddo
         totwgt=sum(v_s(1:numjs))
         do jloop=1, numjs 
                 weight=v_s(jloop)/totwgt
-                bindex = closeguys(iloop)%indices(indys(jloop)) 
-                imp(bindex)%pmass=weight*stoC*pmass
+                bindex = closeguys(ni+iloop)%indices(indys(jloop)) 
+                pat(bindex)%pmass=weight*stoC*pmass
         enddo
 
 enddo   !  loop through the immobile for dissolution
 
-deallocate (closeguys, close_dists)
+deallocate (closeguys, close_dists,pmass,v_s)
 
 end subroutine abc_react
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

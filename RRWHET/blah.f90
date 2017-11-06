@@ -1854,7 +1854,6 @@ character (len=80) outfname(nopc)
 !.external subroutine to move particles
 external movep
 !.time loop
-indices = (/(i, i = 1, nptot)/) ! this is for easy array-indexing of pat
 dtminimum=dtinit
 write(*,*)'  Current Time   # of Particles '
 write(*,*)' --------------  -------------- '
@@ -1884,10 +1883,6 @@ do; if(.not.(curtime.lt.tmax))exit
 ! DAB put in mixing subroutine call here
 !  Right now, anticipating mpi and/or openmp calls, we will pass minimal amounts of info
 !  Hence, only transferring vectors with particle indices, locations, and distances.
-
-    nactive = count(pat%active)
-    allocate (alive(nactive)) ! maybe preallocate to avoid repeatedly doing this
-    alive = pack(indices, pat%active)
   
     call mix_particles(imp,pat,cat,ddiff,dt,closeguys,close_dist,Dloc)
 
