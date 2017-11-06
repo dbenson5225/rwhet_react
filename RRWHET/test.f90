@@ -11,7 +11,7 @@ type particle
 end type particle
 type imparticle
   real::xyz(3)
-  real::pmass(3)
+  integer::pmass(3)
 end type imparticle
 
 
@@ -26,6 +26,12 @@ real::blah(nspec)
 character(80)::filename
 type(particle), allocatable ::pat(:)
 type(imparticle), allocatable ::impat(:)
+integer :: indys(10),numindys
+logical :: blahmask
+real :: pmass(3)
+
+
+indys=(/ 0,0,0,0,0,0,0,0,0,0 /)
 
 allocate(pat(3))
 allocate(impat(2))
@@ -36,13 +42,12 @@ enddo
 do i=1,2
 impat(i)%pmass=[4, 5, 6]
 enddo
+pmass=impat(1)%pmass
+numindys=count(pmass>4)
 
-print*,pat
-print*,' '
-print*,impat
+indys(1:numindys)=pack(pmass,pmass>4)
 
-
-
+print*,impat, indys
 
 !open(10,file='test.dat')
 !read(10,*)i,pat(1)%pmass

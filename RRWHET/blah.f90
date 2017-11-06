@@ -1889,9 +1889,9 @@ do; if(.not.(curtime.lt.tmax))exit
     allocate (alive(nactive)) ! maybe preallocate to avoid repeatedly doing this
     alive = pack(indices, pat%active)
   
-    call mix_particles(imp,pat,cat,ddiff,dt,closeguys,close_dist)
+    call mix_particles(imp,pat,cat,ddiff,dt,closeguys,close_dist,Dloc)
 
-    call abc_react(imp,pat,closeguys,close_dist)
+    call abc_react(imp,pat,closeguys,close_dist,Dloc,dt)
 
 ! DAB put in reaction subroutine here 
 
