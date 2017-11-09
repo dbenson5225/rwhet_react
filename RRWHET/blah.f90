@@ -175,6 +175,7 @@ module global
   real:: smallxyz(3),dxyz(3),near
 
 
+
   double precision:: xyzl2(3),xyzmax(3),xyzmin(3),xyzc(3)
   double precision:: mass(nspec),netmass(nspec),netmassp(3,nspec),netmassm(3,nspec)
   double precision:: massbc(nbtype+1,nspec)
@@ -233,6 +234,8 @@ real,allocatable:: por(:), ret(:), dlong(:), dtran(:), ddiff(:),decay(:)
 !.....OUTPUT CONTROL (OPC)
 integer,allocatable:: opc(:), outunit(:)
 character (len=80),allocatable:: outfname(:)
+!..... REACTION PARAMETERS
+real:: stoA,stoB,stoC
 !
 integer:: iread_error,ierror,idir,inodes,iicat,istat,itype
 integer:: iplotm,iplotc,iplotd,iplotb,iplotp,iploti,iplotr,iplotsc,iplotsm,icnf,imt3d
@@ -1861,6 +1864,7 @@ end
 subroutine solve(movep,sam,cat,pat,imp,rech,chd,vel3,por,ret,dlong,dtran,&
 ddiff,decay,bounds,source,opc,outunit,outfname)
 use global
+use rpt_mod
 implicit none
 type (particle):: pat(1,maxnp)
 type (imparticle):: imp(1,maxnp)
@@ -1926,7 +1930,7 @@ do; if(.not.(curtime.lt.tmax))exit
 !  Hence, only transferring vectors with particle indices, locations, and distances.
   
 
-    call mix_particles(imp,pat,cat,ddiff,dtran,dt,closeguys,close_dist,Dloc,alive)
+    call mix_particles(imp,pat,cat,ddiff,dtran,dt,closeguys,close_dists,Dloc,alive)
 
     call abc_react(imp,pat,cat,closeguys,close_dist,Dloc,dt,alive)
 
@@ -4392,7 +4396,7 @@ do ipntsrc=1,npntsrc
         write(iout,*)' error: maximum # of particles exceeded in pntupdt'
         stop ' error: maximum # of particles exceeded in pntupdt'
       endif
-      if(ptype.eq.q)call addimp(sngl(curtime),x,y,z,i,j,k,pmass,imp,cat)
+      if(ptype.eq.1)call addimp(sngl(curtime),x,y,z,i,j,k,pmass,imp,cat)
       if(ptype.eq.0)call   addp(sngl(curtime),x,y,z,i,j,k,pmass,pat,cat)
   enddo
 enddo

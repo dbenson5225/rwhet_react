@@ -14,9 +14,9 @@ module RPT_mod
     ! type selectout_list
     !     character(:), allocatable :: head
     ! end type
-    integer, parameter           :: sp = kind(1.0), dp = kind(1.d0)
-    double precision, parameter  :: pi = 4.0d0 * atan(1.0d0)
-    integer, parameter          :: numsd = 3
+    integer, parameter              :: sp = kind(1.0), dp = kind(1.d0)
+    double precision, parameter     :: pi = 4.0d0 * atan(1.0d0)
+    integer, parameter              :: numsd = 3
         ! numsd is distances over which particle reactions are considered
  
     ! a couple of derived types for the kd tree search
@@ -50,7 +50,7 @@ module RPT_mod
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    subroutine D_partition (pat,cat,dlong,dtran,ddiff,Dloc,alive)
+    subroutine D_partition (pat,cat,dtran,ddiff,Dloc,alive)
 
 !   I can give any or all of the dispersion tensor to the particle mixing and\or reaction
 !   subroutines.  But I have to take it away from the RW.  It is conceptually easiest that
@@ -70,11 +70,13 @@ module RPT_mod
         double precision, intent(in)   :: ddiff(:),dtran(:)
         integer                        :: i,j,k
         double precision, allocatable  :: Dloc(:)  ! mixing portion of D at alive pats
+        integer                        :: na, aindex
  
     na = count(pat%active)
-    allocate(indices(npmax),alive(na))
-    indices = (/(iloop, iloop = 1, npmax)/) ! this is for easy array-indexing of pat
+    allocate(indices(maxnp),alive(na),Dloc(na))
+    indices = (/(iloop, iloop = 1, maxnp)/) ! this is for easy array-indexing of pat
     alive = pack(indices, pat%active)
+    Dloc=0.d0
     do iloop=1,na
           aindex=alive(iloop)
           i=pat(aindex)%ijk(1); j=pat(aindex)%ijk(2); k=pat(aindex)%ijk(3) 
@@ -100,7 +102,7 @@ module RPT_mod
             ! this holds the indices of nearby particles
         type(dist_array), intent(inout), allocatable   :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
-        double precision, intent(in)   :: ddiff(:), Dloc(:) dt
+        double precision, intent(in)   :: ddiff(:), Dloc(:), dt
         integer, intent(in)            :: alive(:)
  !       integer, allocatable           :: indices(:)
             ! number and array of indices of active mobile particles and number
@@ -144,8 +146,8 @@ module RPT_mod
 !         ntot=na+ni
 !     endif
 
-     allocate(const(ntot),denom(ntot),Dloc(ntot))
-     Dloc=0.0D0
+     allocate(const(ntot),denom(ntot))
+!     Dloc=0.0D0
 
 !  Build locs array--mobile particles will be at the beginning of the
 !  array, and immobile will be at the end
@@ -229,7 +231,7 @@ module RPT_mod
                 ! precalculating seems unnecessary, since that would require
                 ! considering every mobile particle pair, and not every pair
                 ! will interact
-                denom1 = -4.0d0 * (D(iloop)+Dloc(closeguys(iloop)%indices(jloop))) * dt  
+                denom1 = -4.0d0 * (Dloc(iloop)+Dloc(closeguys(iloop)%indices(jloop))) * dt  
                 const1 = ds(iloop) / sqrt(pi * (-denom1))
 
                 ! calculate encounter probability for A and B particle pair
@@ -300,7 +302,7 @@ module RPT_mod
     end subroutine mix_particles
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-subroutine abc_react(imp,pat,cat,closeguys,close_dists,Dloc,dt)
+subroutine abc_react(imp,pat,cat,closeguys,close_dists,Dloc,dt,alive)
 
 !  This subroutine will have reaction stoA A (aq) + stoB B (aq) <--> stoC C (solid) for debugging
 !  The forward rxn has hard-coded rate kf, backwards kr
@@ -316,6 +318,7 @@ subroutine abc_react(imp,pat,cat,closeguys,close_dists,Dloc,dt)
             ! this holds the distances to the corresponding nearby particle
 
        double precision, intent(in)   :: Dloc(:), dt 
+       integer, intent(in)            :: alive(:)
        double precision, allocatable  :: dmA(:), dmB(:), dmC(:), ds(:), pmass(:), v_s(:) 
        double precision               :: dm, dmAtemp, dmBtemp,kr,kf,stoA,stoB,stoC,totwgt,&
                                          denom1,x,y,z,weight
@@ -446,7 +449,7 @@ do iloop=1,ni
 
 enddo   !  loop through the immobile for dissolution
 
-deallocate (closeguys, close_dists,pmass,v_s)
+!deallocate (closeguys, close_dists,pmass,v_s)
 
 end subroutine abc_react
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
