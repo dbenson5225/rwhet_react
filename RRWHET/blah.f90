@@ -156,7 +156,7 @@ module global
   integer:: netxyzp(3),netxyzm(3),netsplit,ixyzp(3),ixyzm(3)
   integer:: ixyzmax(3),ixyzmin(3),npbc(nbtype+1)
   integer:: ibug
-  integer:: inbas,iout,ioutp,incat,invlc,inopc,inpar
+  integer:: inbas,iout,ioutp,incat,invlc,inopc,inpar,inrxn,isolid
   integer:: inpnt,inbnd,invel,inbgr,insam,ibugout
   integer:: isotropic,iadvect,interp,nzone
   integer:: irevz,istream,nres
@@ -182,8 +182,9 @@ module global
   double precision:: rm 
   double precision:: curtime,tnextopc,tnextbnd,tnextvel
   double precision:: tnextpnt,tnextsrc,tmax,dt
+  double precision:: dtranfrac,difffrac
 
-  character (len=80) fnamevel,fnameopc,fnamepar,fnamesam
+  character (len=80) fnamevel,fnameopc,fnamepar,fnamesam,fnamerxn
   character (len=80) fnamepnt,fnamebnd,fnamebas,fnameout,fnameoutp,string(5)
 
 end module global
@@ -257,6 +258,7 @@ invel=16
 inpnt=17
 inbgr=18
 insam=19
+inrxn=20
 !
 iplotm=21
 iplotc=22
@@ -269,6 +271,7 @@ iplotsc=28
 iplotsm=29
 icnf=30
 imt3d=31
+isolid=32
 !
 !.....OPEN MAIN INPUT AND OUTPUT FILES
 !
@@ -505,6 +508,21 @@ allocate (sam(nsam), STAT = ierror)
 if(ierror.ne.0)goto 9994
 call saminput(sam,cat,por,ret)
 !
+!.....REACTION PARAMS
+!   
+if(ibug.ge.1)then;string(1)=' OPENING REACTION PARAMS FILE!';call debug(ibugout,string,nline);endif
+inquire (file=fnamerxn, exist=flexist)
+if(.not.flexist)stop ' Reaction params file does not exist'
+open(inrxn,file=fnamerxn,status="unknown")
+if(ibug.ge.1)then;string(1)=' READING REACTION PARAMS INPUT!';call debug(ibugout,string,nline);endif
+read(inrxn,*,iostat=iread_error)dtranfrac,difffrac,stoA,stoB,stoC
+!call skip(inrxn)
+!call rxninput(dtranfrac,difffrac,stoA,stoB,stoC)
+!read(inrxn,*,iostat=iread_error)tnextpnt,npntsrc
+if(iread_error.eq.-2)goto 9995
+
+
+!
 !.....INITIALIZE SYSTEM
 !
 !.....initialize output control 
@@ -548,6 +566,7 @@ if(np.ne.0)call split(pat,cat,bounds,por,ret)
 !.....movep2: discrete D, isotropic dispersion
 !.....movep3: interpolated D, isotropic dispersion
 !.....movep4: interpolated D, anisotropic dispersion
+
 if(iadvect.eq.1)then
   if(ibug.ge.1)then;string(1)=' Using MOVEP1 - advection only';call debug(ibugout,string,nline);endif
   call solve(movep1,sam,cat,pat,rech,chd,vel3,por,ret,&
@@ -599,6 +618,7 @@ stop ' Normal Termination'
 9992 stop ' Error in point source input file!'
 9993 stop ' Error reading file name'
 9994 stop ' Error allocating memory'
+9995 stop ' Error reading reaction param file'
 end
 !------------------------------------------------------------
 ! degbug
@@ -749,6 +769,19 @@ if(iostatus.ne.0)then
     write(*,*)' End of file encountered reading sample file name in main input '
   endif
 endif  
+call skip(inbas)
+read(inbas,'(a)',iostat=iostatus)fnamerxn
+if(iostatus.ne.0)then
+  if(iostatus.eq.-1)then
+    write(iout,*)' End of file encountered reading reaction params file name in main input'
+    write(*,*)' End of file encountered reading reaction params file name in main input '
+  else
+    write(iout,*)' Error reading sample file name in main input'
+    write(*,*)' End of file encountered reading reaction params file name in main input '
+  endif
+endif  
+
+
 ! compute total number of nodes
 nxyz=nx*ny*nz
 ! commonly used number
@@ -766,7 +799,7 @@ write(iout,1001)ibug,dbgfile,nx,ny,nz,nxyz,dx,dy,dz,&
                 ixyzm(1),ixyzp(1),ixyzm(2),&
                 ixyzp(2),ixyzm(3),ixyzp(3),&
                 fnamebas,fnameopc,fnamepar,&
-                fnamevel,fnamebnd,fnamepnt,fnamesam
+                fnamevel,fnamebnd,fnamepnt,fnamesam,fnamerxn
 write(*,1001)ibug,dbgfile,nx,ny,nz,nxyz,dx,dy,dz,&
                 ixyzmin(1)*dx-dx,ixyzmax(1)*dx,ixyzmin(2)*dy-dy,&
                 ixyzmax(2)*dy,ixyzmin(3)*dz-dz,ixyzmax(3)*dz,&
@@ -776,7 +809,7 @@ write(*,1001)ibug,dbgfile,nx,ny,nz,nxyz,dx,dy,dz,&
                 ixyzm(1),ixyzp(1),ixyzm(2),&
                 ixyzp(2),ixyzm(3),ixyzp(3),&
                 fnamebas,fnameopc,fnamepar,&
-                fnamevel,fnamebnd,fnamepnt,fnamesam
+                fnamevel,fnamebnd,fnamepnt,fnamesam,fnamerxn
  1001 format('                         G R I D '/&
        ' debug level                     ',20('.'),3x,i15/&
        ' debug file                      ',20('.'),3x,a40/&
@@ -826,7 +859,8 @@ write(*,1001)ibug,dbgfile,nx,ny,nz,nxyz,dx,dy,dz,&
        ' velocity control :',3x,a/&
        ' boundaries       :',3x,a/&
        ' point sources    :',3x,a/&
-       ' monitoring points:',3x,a/)
+       ' monitoring points:',3x,a/&
+       ' reaction params  :',3x,a/)
 
 return
  9999      write(iout,*)' ERROR IN MAIN INPUT FILE'
@@ -1867,11 +1901,18 @@ do; if(.not.(curtime.lt.tmax))exit
   curtime=curtime+dt
   sngldt=dt
 !.move all existing particles up to curtime
+! Split the components of the disp/diff tensor between mixing, reaction, and random walks via 
+! the diagonal component using 0<= dtranfrac and difffrac <=1
+    
+    call D_partition (pat,cat,dlong,dtran,ddiff,Dloc,alive)
+
   if(ibug.ge.1)then;string(1)=' CALL MOVEP!';call debug(ibugout,string,nline);endif
-  call movep(1,np,sngldt,vel3,por,ret,dlong,dtran,ddiff,decay,pat,cat,bounds)  ! full anisotropic displacement
+  call movep(1,np,sngldt,vel3,por,ret,dlong,(1-dtranfrac)*dtran,&
+             (1-difffrac)*ddiff,decay,pat,cat,bounds)  ! full anisotropic displacement
 !.distribute and move particles from continuous source boundary sources
   if(ibug.ge.1)then;string(1)=' CALL SRC!';call debug(ibugout,string,nline);endif
-  call src(movep,cat,pat,rech,chd,vel3,por,ret,dlong,dtran,ddiff,decay,bounds,source,sngldt)
+  call src(movep,cat,pat,rech,chd,vel3,por,ret,dlong,(1-dtranfrac)*dtran,&
+           (1-difffrac)*ddiff,decay,bounds,source,sngldt)
 !.remove tagged particles that left domain
   if(ibug.ge.1)then;string(1)=' CALL REMOVEP!';call debug(ibugout,string,nline);endif
   call removep(1,pat,cat)
@@ -1884,11 +1925,10 @@ do; if(.not.(curtime.lt.tmax))exit
 !  Right now, anticipating mpi and/or openmp calls, we will pass minimal amounts of info
 !  Hence, only transferring vectors with particle indices, locations, and distances.
   
-    call mix_particles(imp,pat,cat,ddiff,dt,closeguys,close_dist,Dloc)
 
-    call abc_react(imp,pat,closeguys,close_dist,Dloc,dt)
+    call mix_particles(imp,pat,cat,ddiff,dtran,dt,closeguys,close_dist,Dloc,alive)
 
-! DAB put in reaction subroutine here 
+    call abc_react(imp,pat,cat,closeguys,close_dist,Dloc,dt,alive)
 
 !.update velocities
   tnextvelo=tnextvel
