@@ -3,7 +3,7 @@
 ! This code solves arbitrary reactions and transport by particles.
 ! There are two logical ways to add reactions.  The first, in which each particle is composed
 ! of one component and changing mass (Bolster et al. WRR, 2016) is best handled by taking the 
-! particle array pat(:,:) of species n=1,nspec as species 1 = pat(1,np), species 2 = pat(2,np) ...
+! particle array pat(:,:) of species n=1,nspec as species 1 = pat(np), species 2 = pat(2,np) ...
 ! 
 ! This program follows the algorithm of Benson et al. (WRR 2016), in which each particle carries mass 
 ! of any or all species.  In this case, it is best handled by changing each particle's attributes,
@@ -21,7 +21,7 @@
 ! the user should thoroughly understand its applicability, limitations and 
 ! foundational theory before using it. Use of RWHet is at your own risk; 
 ! the author cannot guarantee RWHet's accuracy for your application. 
-! The author assumes no liability for the consequences of using RWHet.  
+! The author assumes npat(o liability for the consequences of using RWHet.  
 ! RWHet is the sole ownership of the author and RWHet or any of the code 
 ! therein may not be distributed without this document and the author's permission.
 ! Email: emlabolle@ucdavis.edu
@@ -219,8 +219,8 @@ implicit none
 ! nres                                - particle resolution at cres
 !
 type (sample), allocatable:: sam(:)
-type (particle), allocatable:: pat(:,:)
-type (imparticle), allocatable:: imp(:,:)
+type (particle), allocatable:: pat(:)
+type (imparticle), allocatable:: imp(:)
 type (cell), allocatable::     cat(:,:,:)
 type (boundary), allocatable:: bounds(:)
 type (recharge), allocatable:: rech(:,:)
@@ -333,7 +333,7 @@ allocate (chd(nx,ny,nz), STAT = ierror)
 if(ierror.ne.0)goto 9994
 !
 if(ibug.ge.1)then;string(1)=' ALLOCATING MEMORY FOR PAT ARRAY!';call debug(ibugout,string,nline);endif
-allocate (pat(1,maxnp), STAT = ierror)
+allocate (pat(maxnp), STAT = ierror)
 if(ierror.ne.0)goto 9994
 !
 if(ibug.ge.1)then;string(1)=' ALLOCATING MEMORY FOR CAT ARRAY!';call debug(ibugout,string,nline);endif
@@ -572,21 +572,21 @@ if(np.ne.0)call split(pat,cat,bounds,por,ret)
 
 if(iadvect.eq.1)then
   if(ibug.ge.1)then;string(1)=' Using MOVEP1 - advection only';call debug(ibugout,string,nline);endif
-  call solve(movep1,sam,cat,pat,rech,chd,vel3,por,ret,&
-  dlong,dtran,ddiff,decay,bounds,source,opc,outunit,outfname)
+  call solve(movep1,sam,cat,pat,imp,rech,chd,vel3,por,ret,dlong,&
+             dtran,ddiff,decay,bounds,source,opc,outunit,outfname)
 else
   if(isotropic.eq.1.and.interp.eq.0)then                        ! isotropic D
     if(ibug.ge.1)then;string(1)=' Using MOVEP2 - isotropic, no interpolation';call debug(ibugout,string,nline);endif
-    call solve(movep2,sam,cat,pat,rech,chd,vel3,por,ret,&
-    dlong,dtran,ddiff,decay,bounds,source,opc,outunit,outfname)
+    call solve(movep2,sam,cat,pat,imp,rech,chd,vel3,por,ret,dlong,&
+               dtran,ddiff,decay,bounds,source,opc,outunit,outfname)
   elseif(isotropic.eq.1.and.interp.eq.1)then                    ! isotropic D, interpolated
     if(ibug.ge.1)then;string(1)=' Using MOVEP3 - isotropic, interpolation';call debug(ibugout,string,nline);endif
-    call solve(movep3,sam,cat,pat,rech,chd,vel3,por,ret,&
-    dlong,dtran,ddiff,decay,bounds,source,opc,outunit,outfname)
+    call solve(movep3,sam,cat,pat,imp,rech,chd,vel3,por,ret,dlong,&
+               dtran,ddiff,decay,bounds,source,opc,outunit,outfname)
   elseif(isotropic.eq.0.and.interp.eq.1)then                    ! anisotropic D, interpolated
     if(ibug.ge.1)then;string(1)=' Using MOVEP4 - anisotropic, interpolation';call debug(ibugout,string,nline);endif
-    call solve(movep4,sam,cat,pat,rech,chd,vel3,por,ret,&
-    dlong,dtran,ddiff,decay,bounds,source,opc,outunit,outfname)
+    call solve(movep4,sam,cat,pat,imp,rech,chd,vel3,por,ret,dlong,&
+               dtran,ddiff,decay,bounds,source,opc,outunit,outfname)
   else
     stop ' Must use interp=1 for anisotropic dispersion tensor'
   endif
@@ -1866,21 +1866,22 @@ ddiff,decay,bounds,source,opc,outunit,outfname)
 use global
 use rpt_mod
 implicit none
-type (particle):: pat(1,maxnp)
-type (imparticle):: imp(1,maxnp)
-type (sample):: sam(nsam)
-type (cell)::     cat(nx,ny,nz)
-type (boundary):: bounds(1:maxbnd)
-type (recharge):: rech(nx,ny)
-type (constant_head):: chd(nx,ny,nz)
-type(index_array), intent(inout), allocatable  :: closeguys(:)
+type (particle)                 :: pat(maxnp)
+type (imparticle)               :: imp(maxnp)
+type (sample)                   :: sam(nsam)
+type (cell)                     :: cat(nx,ny,nz)
+type (boundary)                 :: bounds(1:maxbnd)
+type (recharge)                 :: rech(nx,ny)
+type (constant_head)            :: chd(nx,ny,nz)
+type(index_array), allocatable  :: closeguys(:)
             ! this holds the indices of nearby particles
-type(dist_array), intent(inout), allocatable   :: close_dists(:)
+type(dist_array), allocatable   :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
+double precision,allocatable    :: Dloc(:)   ! mixing portion of the dispersion at live pats 
 
-integer             :: indices(maxnp), lastinject
-integer, allocatable:: alive(:)   ! array for indexing to live mobile particles
-integer             :: nactive ! number of active mobile particles
+integer                         :: indices(maxnp), lastinject
+integer, allocatable            :: alive(:)   ! array for indexing to live mobile particles
+integer                         :: nactive ! number of active mobile particles
 
 integer:: imawupdt,i,j,k
 integer:: source(maxsource),opc(nopc),outunit(nopc+1)
@@ -1908,15 +1909,16 @@ do; if(.not.(curtime.lt.tmax))exit
 ! Split the components of the disp/diff tensor between mixing, reaction, and random walks via 
 ! the diagonal component using 0<= dtranfrac and difffrac <=1
     
-    call D_partition (pat,cat,dlong,dtran,ddiff,Dloc,alive)
+    call D_partition (pat,cat,dtran,ddiff,Dloc,alive)
 
   if(ibug.ge.1)then;string(1)=' CALL MOVEP!';call debug(ibugout,string,nline);endif
   call movep(1,np,sngldt,vel3,por,ret,dlong,(1-dtranfrac)*dtran,&
              (1-difffrac)*ddiff,decay,pat,cat,bounds)  ! full anisotropic displacement
 !.distribute and move particles from continuous source boundary sources
   if(ibug.ge.1)then;string(1)=' CALL SRC!';call debug(ibugout,string,nline);endif
-  call src(movep,cat,pat,rech,chd,vel3,por,ret,dlong,(1-dtranfrac)*dtran,&
-           (1-difffrac)*ddiff,decay,bounds,source,sngldt)
+  call src(movep,cat,pat,rech,chd,vel3,por,ret,dlong,real(1.0-dtranfrac)*dtran,&
+           real(1.0-difffrac)*ddiff,decay,bounds,source,sngldt)
+
 !.remove tagged particles that left domain
   if(ibug.ge.1)then;string(1)=' CALL REMOVEP!';call debug(ibugout,string,nline);endif
   call removep(1,pat,cat)
@@ -1930,9 +1932,9 @@ do; if(.not.(curtime.lt.tmax))exit
 !  Hence, only transferring vectors with particle indices, locations, and distances.
   
 
-    call mix_particles(imp,pat,cat,ddiff,dtran,dt,closeguys,close_dists,Dloc,alive)
+    call mix_particles(imp,pat,cat,dt,closeguys,close_dists,Dloc,alive)
 
-    call abc_react(imp,pat,cat,closeguys,close_dist,Dloc,dt,alive)
+    call abc_react(imp,pat,cat,closeguys,close_dists,Dloc,dt,alive)
 
 !.update velocities
   tnextvelo=tnextvel
@@ -1990,7 +1992,7 @@ subroutine src(movep,cat,pat,rech,chd,vel3,por,ret,dlong,dtran,&
 ddiff,decay,bounds,source,sngldt)
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(1:maxbnd)
 type (recharge):: rech(nx,ny)
@@ -2354,7 +2356,7 @@ subroutine release_type11(movep,cat,pat,rech,chd,vel3,por,ret,dlong,dtran,&
 ddiff,decay,bounds,source,sngldt,xm,ym,zm,sx,sy,sz,flow,massrate,nptime,c,ibounds,itype)
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(1:maxbnd)
 type (recharge):: rech(nx,ny)
@@ -2409,7 +2411,7 @@ subroutine placerch1(time,xm,ym,sx,sy,pat,cat,npart,pmass,iptype,rech)
 ! place npart particles uniformly in a block starting at xyzm and ending at sxyz
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 type (recharge):: rech(nx,ny)
 !integer:: maxnp,np,npart,iptype
@@ -2446,7 +2448,7 @@ subroutine placerch2(time,i,j,pat,cat,rech,npart,pmass,iptype)
 ! from the recharge array
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 type (recharge):: rech(nx,ny)
 integer:: i,j,k,ip,npart,iptype
@@ -2478,7 +2480,7 @@ dlong,dtran,ddiff,decay,pat,cat,bounds)
 !.....analytical stream lines on a block-centered finite difference solution
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(*)
 integer:: iflag,ip,kx,ky,kz
@@ -2492,16 +2494,16 @@ real:: x,y,z,xm,ym,zm,xp,yp,zp,xold,yold,zold,th4,ret4,retth
 real:: xstream,ystream,zstream
 data iflag/1/
 do ip=ip0,ipn
-  if(.not.pat(1,ip)%active)cycle
+  if(.not.pat(ip)%active)cycle
 !
   timeleft=dble(dtcurrent)
   totaltime=0.0
   do; if(.not.sngl(timeleft).gt.0.0)exit
 !...particle location
-    x=pat(1,ip)%xyz(1); y=pat(1,ip)%xyz(2); z=pat(1,ip)%xyz(3) 
+    x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3) 
 !
-    i=pat(1,ip)%ijk(1); j=pat(1,ip)%ijk(2); k=pat(1,ip)%ijk(3) 
-    io=pat(1,ip)%ijk(1); jo=pat(1,ip)%ijk(2); ko=pat(1,ip)%ijk(3) 
+    i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3) 
+    io=pat(ip)%ijk(1); jo=pat(ip)%ijk(2); ko=pat(ip)%ijk(3) 
     kx=i-1; ky=j-1; kz=k-1
 !...parameters
     th4=por(cat(i,j,k)%zone)
@@ -2523,10 +2525,10 @@ do ip=ip0,ipn
 !  DAB either handle here with nspec decay constants or do separately in reaction subroutine
 !  DAB I opt for the latter at this point.
     if(decay(cat(i,j,k)%zone).ne.0.0)&
-    pat(1,ip)%pmass=pat(1,ip)%pmass*dexp(dble(decay(cat(i,j,k)%zone)*dtmin))
+    pat(ip)%pmass=pat(ip)%pmass*dexp(dble(decay(cat(i,j,k)%zone)*dtmin))
 !...reflect particles at boundaries as needed or tag to remove
     call reflect(sngl(timeleft),pat,cat,x,y,z,ip)
-    if(.not.pat(1,ip)%active)exit
+    if(.not.pat(ip)%active)exit
 !...stream returns new cell location, 
 !...compute new cell location only if reflected
     if(x.ne.xold.or.y.ne.yold.or.z.ne.zold)then
@@ -2540,7 +2542,7 @@ do ip=ip0,ipn
     kx,ky,kz,i,j,k,ip,dtmin,sngl(timeleft),x,y,z)
 !...update particle and cell attributes
     call updtp(io,jo,ko,i,j,k,ip,x,y,z,pat,cat)
-    if(.not.pat(1,ip)%active)exit
+    if(.not.pat(ip)%active)exit
   enddo
 enddo
 return
@@ -2553,7 +2555,7 @@ dlong,dtran,ddiff,decay,pat,cat,bounds)
 ! variable porosity, isotropic dispersion displacement
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(*)
 integer:: ip,kx,ky,kz,ii,jj,kk,kxt,kyt,kzt
@@ -2569,7 +2571,7 @@ real:: at,diff,ratv4d,ratv4dr2dt,dxd,dyd,dzd,r2dt
 real:: xstream,ystream,zstream
 !
 do ip=ip0,ipn
-  if(.not.pat(1,ip)%active)cycle
+  if(.not.pat(ip)%active)cycle
         
 !
   timeleft=dble(dtcurrent)
@@ -2577,11 +2579,11 @@ do ip=ip0,ipn
   do; if(.not.sngl(timeleft).gt.0.0)exit
     call random(w1,w2,w3)
 !...particle location
-    x=pat(1,ip)%xyz(1); y=pat(1,ip)%xyz(2); z=pat(1,ip)%xyz(3) 
-    xo=pat(1,ip)%xyz(1); yo=pat(1,ip)%xyz(2); zo=pat(1,ip)%xyz(3) 
+    x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3) 
+    xo=pat(ip)%xyz(1); yo=pat(ip)%xyz(2); zo=pat(ip)%xyz(3) 
 !
-    i=pat(1,ip)%ijk(1); j=pat(1,ip)%ijk(2); k=pat(1,ip)%ijk(3) 
-    io=pat(1,ip)%ijk(1); jo=pat(1,ip)%ijk(2); ko=pat(1,ip)%ijk(3) 
+    i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3) 
+    io=pat(ip)%ijk(1); jo=pat(ip)%ijk(2); ko=pat(ip)%ijk(3) 
     kx=i-1; ky=j-1; kz=k-1
 !...interpolate velocity          
     vx4=vel3(1,kx,j,k)+(vel3(1,i,j,k)-vel3(1,kx,j,k))*(x/dx-float(kx))
@@ -2612,12 +2614,12 @@ do ip=ip0,ipn
     ratv4d=sqrt(at*v4/retth+diff)
     r2dt=sqrt(2.0*dtmin)
     ratv4dr2dt=ratv4d*r2dt
-    xt=pat(1,ip)%xyz(1)+mx*ratv4dr2dt*w1
-    yt=pat(1,ip)%xyz(2)+my*ratv4dr2dt*w2
-    zt=pat(1,ip)%xyz(3)+mz*ratv4dr2dt*w3
+    xt=pat(ip)%xyz(1)+mx*ratv4dr2dt*w1
+    yt=pat(ip)%xyz(2)+my*ratv4dr2dt*w2
+    zt=pat(ip)%xyz(3)+mz*ratv4dr2dt*w3
 !...reflect particles at boundaries as needed or tag to remove
     call reflect(sngl(timeleft),pat,cat,xt,yt,zt,ip)     
-    if(.not.pat(1,ip)%active)exit
+    if(.not.pat(ip)%active)exit
 !...compute new cell location from xt,yt,zt 
     kxt=ifix(xt/dx); kyt=ifix(yt/dy); kzt=ifix(zt/dz)
     it=kxt+1; jt=kyt+1; kt=kzt+1
@@ -2638,10 +2640,10 @@ do ip=ip0,ipn
     z=zstream+mz*ratv4dr2dt*w3
 !...decay m=m0*exp(k*dt)
     if(decay(cat(i,j,k)%zone).ne.0.0)&
-    pat(1,ip)%pmass=pat(1,ip)%pmass*dexp(dble(decay(cat(i,j,k)%zone)*dtmin))
+    pat(ip)%pmass=pat(ip)%pmass*dexp(dble(decay(cat(i,j,k)%zone)*dtmin))
 !...reflect particles at boundaries as needed or tag to remove
     call reflect(sngl(timeleft),pat,cat,x,y,z,ip)
-    if(.not.pat(1,ip)%active)exit
+    if(.not.pat(ip)%active)exit
 !...compute cell location
     kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
     i=kx+1; j=ky+1; k=kz+1
@@ -2656,7 +2658,7 @@ do ip=ip0,ipn
     call absorb(pat,cat,bounds,vel3,por,ret,kx,ky,kz,i,j,k,ip,dtmin,sngl(timeleft),x,y,z)
 !...update particle and cell attributes
     call updtp(io,jo,ko,i,j,k,ip,x,y,z,pat,cat)
-    if(.not.pat(1,ip)%active)exit
+    if(.not.pat(ip)%active)exit
   enddo
 enddo
 return
@@ -2672,7 +2674,7 @@ dlong,dtran,ddiff,decay,pat,cat,bounds)
 use global
 implicit none
 !
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(1:maxbnd)
 integer:: ip,ip0,ipn
@@ -2701,7 +2703,7 @@ real:: fynfx,fy1nfx,fynfx1,fy1nfx1,fznfx,fz1nfx,fznfx1,fz1nfx1
 real:: fznfy,fz1nfy,fznfy1,fz1nfy1
 !
 do ip=ip0,ipn
-  if(.not.pat(1,ip)%active)cycle
+  if(.not.pat(ip)%active)cycle
 !
   at=dtran(cat(1,1,1)%zone)
   diff=ddiff(cat(1,1,1)%zone)
@@ -2710,11 +2712,11 @@ do ip=ip0,ipn
   do; if(.not.sngl(timeleft).gt.0.0)exit
     call random(w1,w2,w3)
 !...particle location
-    x=pat(1,ip)%xyz(1); y=pat(1,ip)%xyz(2); z=pat(1,ip)%xyz(3) 
-    xo=pat(1,ip)%xyz(1); yo=pat(1,ip)%xyz(2); zo=pat(1,ip)%xyz(3) 
+    x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3) 
+    xo=pat(ip)%xyz(1); yo=pat(ip)%xyz(2); zo=pat(ip)%xyz(3) 
 !
-    i=pat(1,ip)%ijk(1); j=pat(1,ip)%ijk(2); k=pat(1,ip)%ijk(3) 
-    io=pat(1,ip)%ijk(1); jo=pat(1,ip)%ijk(2); ko=pat(1,ip)%ijk(3) 
+    i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3) 
+    io=pat(ip)%ijk(1); jo=pat(ip)%ijk(2); ko=pat(ip)%ijk(3) 
     kx=i-1; ky=j-1; kz=k-1
 !...bilinearly interpolate on cells centered on the corners of the grid blocks
 !
@@ -2876,10 +2878,10 @@ do ip=ip0,ipn
     timeleft=dble(dtcurrent)-totaltime
 !...decay m=m0*exp(k*dt)
     if(decay(cat(i,j,k)%zone).ne.0.0)&
-    pat(1,ip)%pmass=pat(1,ip)%pmass*dexp(dble(decay(cat(i,j,k)%zone)*dtmin))
+    pat(ip)%pmass=pat(ip)%pmass*dexp(dble(decay(cat(i,j,k)%zone)*dtmin))
 !...reflect particles at boundaries as needed or tag to remove
     call reflect(sngl(timeleft),pat,cat,x,y,z,ip)
-    if(.not.pat(1,ip)%active)exit
+    if(.not.pat(ip)%active)exit
 !...compute cell location
     kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
     i=kx+1; j=ky+1; k=kz+1
@@ -2895,7 +2897,7 @@ do ip=ip0,ipn
     kx,ky,kz,i,j,k,ip,dtmin,sngl(timeleft),x,y,z)
 !...update particle and cell attributes
     call updtp(io,jo,ko,i,j,k,ip,x,y,z,pat,cat)
-    if(.not.pat(1,ip)%active)exit
+    if(.not.pat(ip)%active)exit
   enddo
 enddo
 return
@@ -2942,7 +2944,7 @@ dlong,dtran,ddiff,decay,pat,cat,bounds)
 !
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(1:maxbnd)
 integer:: ip,ip0,ipn
@@ -2982,7 +2984,7 @@ real:: fynfx,fy1nfx,fynfx1,fy1nfx1,fznfx,fz1nfx,fznfx1,fz1nfx1
 real:: fznfy,fz1nfy,fznfy1,fz1nfy1
 !
 do ip=ip0,ipn
-  if(.not.pat(1,ip)%active)cycle
+  if(.not.pat(ip)%active)cycle
 !
   al=dlong(cat(1,1,1)%zone)
   at=dtran(cat(1,1,1)%zone)
@@ -2993,11 +2995,11 @@ do ip=ip0,ipn
   do; if(.not.sngl(timeleft).gt.0.0)exit
     call random(w1,w2,w3)
 !...particle location
-    x=pat(1,ip)%xyz(1); y=pat(1,ip)%xyz(2); z=pat(1,ip)%xyz(3) 
-    xo=pat(1,ip)%xyz(1); yo=pat(1,ip)%xyz(2); zo=pat(1,ip)%xyz(3) 
+    x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3) 
+    xo=pat(ip)%xyz(1); yo=pat(ip)%xyz(2); zo=pat(ip)%xyz(3) 
 !
-    i=pat(1,ip)%ijk(1); j=pat(1,ip)%ijk(2); k=pat(1,ip)%ijk(3) 
-    io=pat(1,ip)%ijk(1); jo=pat(1,ip)%ijk(2); ko=pat(1,ip)%ijk(3) 
+    i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3) 
+    io=pat(ip)%ijk(1); jo=pat(ip)%ijk(2); ko=pat(ip)%ijk(3) 
     kx=i-1; ky=j-1; kz=k-1
 !...bilinearly interpolate on cells centered on the corners of the grid blocks
 !
@@ -3216,10 +3218,10 @@ do ip=ip0,ipn
     timeleft=dble(dtcurrent)-totaltime
 !...decay m=m0*exp(k*dt)
     if(decay(cat(i,j,k)%zone).ne.0.0)&
-    pat(1,ip)%pmass=pat(1,ip)%pmass*dexp(dble(decay(cat(i,j,k)%zone)*dtmin))
+    pat(ip)%pmass=pat(ip)%pmass*dexp(dble(decay(cat(i,j,k)%zone)*dtmin))
 !...reflect particles at boundaries as needed or tag to remove
     call reflect(sngl(timeleft),pat,cat,x,y,z,ip)
-    if(.not.pat(1,ip)%active)exit
+    if(.not.pat(ip)%active)exit
 !...compute cell location
     kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
     i=kx+1; j=ky+1; k=kz+1
@@ -3235,7 +3237,7 @@ do ip=ip0,ipn
                 kx,ky,kz,i,j,k,ip,dtmin,sngl(timeleft),x,y,z)
 !...update particle and cell attributes
     call updtp(io,jo,ko,i,j,k,ip,x,y,z,pat,cat)
-    if(.not.pat(1,ip)%active)exit
+    if(.not.pat(ip)%active)exit
   enddo
 enddo
 return
@@ -3370,7 +3372,7 @@ subroutine split(pat,cat,bounds,por,ret)
 !  
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(1:maxbnd)
 integer:: ip,itype,ibounds,ip_res
@@ -3381,8 +3383,8 @@ double precision:: pmass_old(nspec),pmass(nspec),pmass_min(nspec),cmass(nspec),c
 !
 if(nres.le.1)return
 do ip=1,np
-  pmass_old=pat(1,ip)%pmass
-  i=pat(1,ip)%ijk(1); j=pat(1,ip)%ijk(2); k=pat(1,ip)%ijk(3)
+  pmass_old=pat(ip)%pmass
+  i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3)
 ! don't split particles with mass less than pmass_min:
   pmass_min=cres*por(cat(i,j,k)%zone)*ret(cat(i,j,k)%zone)*vol/float(nres)   
 ! old  if(pmass_old.ge.pmass_min)then                            ! particles with pmass > pmass_min
@@ -3401,15 +3403,15 @@ do ip=1,np
         if(ip_res.lt.nres)then
 !.........split particle into enough equal parts to force the above condition false
           nsplit=nres/ip_res+1
-          x=pat(1,ip)%xyz(1); y=pat(1,ip)%xyz(2); z=pat(1,ip)%xyz(3)
+          x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3)
           pmass=pmass_old/dble(nsplit)
           cat(i,j,k)%cmass=cat(i,j,k)%cmass-pmass_old+pmass
-          pat(1,ip)%pmass=pmass
-          time=pat(1,ip)%birth_day
+          pat(ip)%pmass=pmass
+          time=pat(ip)%birth_day
           do isplit=1,nsplit-1
             call addp(time,x,y,z,i,j,k,pmass,pat,cat)
 !...........assign birth date for split particle to that of parent                    
-            pat(1,np)%birth_day=pat(1,ip)%birth_day
+            pat(np)%birth_day=pat(ip)%birth_day
           enddo
           netsplit=netsplit+nsplit-1
         endif
@@ -4149,7 +4151,7 @@ end
 subroutine bndupdt(bounds,source,cat,pat)
 ! update BCs
 use global
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(1:maxbnd)
 integer source(maxsource)
@@ -4296,7 +4298,7 @@ end
 !------------------------------------------------------------
 subroutine srcupdt(source,bounds,pat,cat)
 use global
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(1:maxbnd)
 ! distribute particles in source's
@@ -4341,8 +4343,8 @@ end
 subroutine pntupdt(pat,imp,cat,vel3)
 use global
 implicit none
-type (particle):: pat(1,maxnp)
-type (imparticle):: imp(1,maxnp)
+type (particle):: pat(maxnp)
+type (imparticle):: imp(maxnp)
 type (cell)::     cat(nx,ny,nz)
 !.....read point source information
 integer:: ipntsrc,indomain,iread_error,kx,ky,kz,i,j,k
@@ -4506,7 +4508,7 @@ end
 subroutine placeu(time,xm,ym,zm,sx,sy,sz,pat,cat,npart,pmass,iptype,ierr)
 ! place npart particles uniformly in a block starting at xyzm and ending at sxyz
 use global
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 double precision pmass(nspec)
 ierr=0
@@ -4533,7 +4535,7 @@ subroutine placeuf(time,xm,ym,zm,sx,sy,sz,pat,cat,vel3,npart,pmass,iptype)
 ! allocating then by flux over the vertical (specialized for perchlorate problem)
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 real:: vel3(3,0:nx,0:ny,0:nz),sx,sy,sz,xm,ym,zm,qtotal,q,r,randu01,sznew,zmnew,x,y,z,time
 real, allocatable:: probw(:)
@@ -4591,7 +4593,7 @@ end
 !---------------------------------------------------------------------
 subroutine output(opc,outunit,outfname,sam,pat,cat,vel3,bounds,por,ret,decay)
 use global
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (sample):: sam(nsam)
 type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(1:maxbnd)
@@ -4646,7 +4648,7 @@ enddo
 if(idecay.eq.1)then
   mass=0.0
   do ip=1,np
-    mass=mass+pat(1,ip)%pmass
+    mass=mass+pat(ip)%pmass
   enddo
 endif
 write(iout,1000)sngl(curtime),(npbc(ibtype),ibtype=1,nbtype+1),&
@@ -5012,15 +5014,15 @@ end
 subroutine plotp(pat,iunit)
 !     particle attributes
 use global
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 !
 write(iunit) np,sngl(curtime)
 do ip=1,np	
   write(iunit)&
-  pat(1,ip)%pnumber,&  
-!  pat(1,ip)%birth_place(1),pat(1,ip)%birth_place(2),pat(1,ip)%birth_place(3),&
-  pat(1,ip)%xyz(1),pat(1,ip)%xyz(2),pat(1,ip)%xyz(3),&
-  sngl(curtime)-pat(1,ip)%birth_day,sngl(pat(1,ip)%pmass)
+  pat(ip)%pnumber,&  
+!  pat(ip)%birth_place(1),pat(ip)%birth_place(2),pat(ip)%birth_place(3),&
+  pat(ip)%xyz(1),pat(ip)%xyz(2),pat(ip)%xyz(3),&
+  sngl(curtime)-pat(ip)%birth_day,sngl(pat(ip)%pmass)
 enddo
 return
 ! skip formatted output
@@ -5028,10 +5030,10 @@ return
 write(iunit,*) np,sngl(curtime)
 do ip=1,np	
   write(iunit,'(1x,i15,1x,4(E15.8,1x),50D15.8)')&
-  pat(1,ip)%pnumber,&  
-!  pat(1,ip)%birth_place(1),pat(1,ip)%birth_place(2),pat(1,ip)%birth_place(3),&
-  pat(1,ip)%xyz(1),pat(1,ip)%xyz(2),pat(1,ip)%xyz(3),&
-  curtime-pat(1,ip)%birth_day,pat(1,ip)%pmass
+  pat(ip)%pnumber,&  
+!  pat(ip)%birth_place(1),pat(ip)%birth_place(2),pat(ip)%birth_place(3),&
+  pat(ip)%xyz(1),pat(ip)%xyz(2),pat(ip)%xyz(3),&
+  curtime-pat(ip)%birth_day,pat(ip)%pmass
 enddo
 return
 end
@@ -5041,7 +5043,7 @@ end
 subroutine plots(sam,pat,cat,vel3,por,ret,iunit1,iunit2)
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (sample):: sam(nsam)
 type (cell)::   cat(nx,ny,nz)
 real:: por(nzone),ret(nzone)
@@ -5073,20 +5075,20 @@ do isam=1,nsam
   msample(isam,:)=0.0
   if(sam(isam)%itype.eq.1)then 
     do ip=1,np
-      dxy=sqrt((pat(1,ip)%xyz(1)-sam(isam)%xyz(1))**2+(pat(1,ip)%xyz(2)-sam(isam)%xyz(2))**2)
-      zdiff=abs(pat(1,ip)%xyz(3)-(sam(isam)%xyz(3)+sam(isam)%xyz(4))/2.0)
+      dxy=sqrt((pat(ip)%xyz(1)-sam(isam)%xyz(1))**2+(pat(ip)%xyz(2)-sam(isam)%xyz(2))**2)
+      zdiff=abs(pat(ip)%xyz(3)-(sam(isam)%xyz(3)+sam(isam)%xyz(4))/2.0)
       thick=(sam(isam)%xyz(4)-sam(isam)%xyz(3))/2.0
       if(dxy.le.sam(isam)%radius.and.zdiff.le.thick)then
-        kx=ifix(pat(1,ip)%xyz(1)/dx); ky=ifix(pat(1,ip)%xyz(2)/dy); kz=ifix(pat(1,ip)%xyz(3)/dz)
+        kx=ifix(pat(ip)%xyz(1)/dx); ky=ifix(pat(ip)%xyz(2)/dy); kz=ifix(pat(ip)%xyz(3)/dz)
         i=kx+1; j=ky+1; k=kz+1
         do izone=1,sam(isam)%nzone
           if(cat(i,j,k)%zone.eq.sam(isam)%zone(izone))then
-  	        sam(isam)%conc=sam(isam)%conc+sngl(pat(1,ip)%pmass)/sam(isam)%vol
-	        sam(isam)%mass=sam(isam)%mass+sngl(pat(1,ip)%pmass)
+  	        sam(isam)%conc=sam(isam)%conc+sngl(pat(ip)%pmass)/sam(isam)%vol
+	        sam(isam)%mass=sam(isam)%mass+sngl(pat(ip)%pmass)
      do iloop=1,nspec
-	        msample(isam,iloop)=msample(isam,iloop)+sngl(pat(1,ip)%pmass(iloop))
+	        msample(isam,iloop)=msample(isam,iloop)+sngl(pat(ip)%pmass(iloop))
      enddo
-	        msamplet1=msamplet1+sngl(pat(1,ip)%pmass)
+	        msamplet1=msamplet1+sngl(pat(ip)%pmass)
             exit
           endif
         enddo
@@ -5251,29 +5253,29 @@ do isam=1,nsam
     endif
   elseif(sam(isam)%itype.eq.5)then 
     do ip=1,np
-      kx=ifix(pat(1,ip)%xyz(1)/dx); ky=ifix(pat(1,ip)%xyz(2)/dy); kz=ifix(pat(1,ip)%xyz(3)/dz)
+      kx=ifix(pat(ip)%xyz(1)/dx); ky=ifix(pat(ip)%xyz(2)/dy); kz=ifix(pat(ip)%xyz(3)/dz)
       i=kx+1; j=ky+1; k=kz+1
       if(i.eq.sam(isam)%ijk(1).and.j.eq.sam(isam)%ijk(2).and.&
         (k.ge.sam(isam)%ijk(3).and.k.le.sam(isam)%ijk(4)))then
         if(sam(isam)%nzone.ne.0)then
            do izone=1,sam(isam)%nzone
              if(cat(i,j,k)%zone.eq.sam(isam)%zone(izone))then
-  	           sam(isam)%conc=sam(isam)%conc+sngl(pat(1,ip)%pmass)/sam(isam)%vol
-	           sam(isam)%mass=sam(isam)%mass+sngl(pat(1,ip)%pmass)
+  	           sam(isam)%conc=sam(isam)%conc+sngl(pat(ip)%pmass)/sam(isam)%vol
+	           sam(isam)%mass=sam(isam)%mass+sngl(pat(ip)%pmass)
      do iloop=1,nspec
-	           msample(isam,iloop)=msample(isam,iloop)+sngl(pat(1,ip)%pmass(iloop))
+	           msample(isam,iloop)=msample(isam,iloop)+sngl(pat(ip)%pmass(iloop))
      enddo
-	           msamplet5=msamplet5+sngl(pat(1,ip)%pmass)
+	           msamplet5=msamplet5+sngl(pat(ip)%pmass)
                exit
              endif
            enddo
         else
-  	       sam(isam)%conc=sam(isam)%conc+sngl(pat(1,ip)%pmass)/sam(isam)%vol
-           sam(isam)%mass=sam(isam)%mass+sngl(pat(1,ip)%pmass)
+  	       sam(isam)%conc=sam(isam)%conc+sngl(pat(ip)%pmass)/sam(isam)%vol
+           sam(isam)%mass=sam(isam)%mass+sngl(pat(ip)%pmass)
      do iloop=1,nspec
-	       msample(isam,iloop)=msample(isam,iloop)+sngl(pat(1,ip)%pmass(iloop))
+	       msample(isam,iloop)=msample(isam,iloop)+sngl(pat(ip)%pmass(iloop))
      enddo
-	       msamplet5=msamplet5+sngl(pat(1,ip)%pmass)
+	       msamplet5=msamplet5+sngl(pat(ip)%pmass)
         endif
 	  endif
     enddo
@@ -5392,7 +5394,7 @@ end
 subroutine plotm(pat,iunit,fname,cat)
 ! 
 use global
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 character (len=80) fname,fname2
 double precision xmean,ymean,zmean,xd,yd,zd,pmass,totmas
@@ -5425,9 +5427,9 @@ if(np.gt.0)then
   do iloop=1,nspec   
 
     do ip=1,np
-      xd=pat(1,ip)%xyz(1); yd=pat(1,ip)%xyz(2); zd=pat(1,ip)%xyz(3)
-      pmass=dble(pat(1,ip)%pmass(iloop))
-!      pmass=dble(pat(1,ip)%pmass)
+      xd=pat(ip)%xyz(1); yd=pat(ip)%xyz(2); zd=pat(ip)%xyz(3)
+      pmass=dble(pat(ip)%pmass(iloop))
+!      pmass=dble(pat(ip)%pmass)
       rmaxx=max(rmaxx,sngl(xd))
       rmaxy=max(rmaxy,sngl(yd))
       rmaxz=max(rmaxz,sngl(zd))
@@ -5697,8 +5699,8 @@ subroutine addp(time,x,y,z,i,j,k,pmass,pat,cat)
 !.....add a particle at location x,y,x,in cell, with masses pmass
 use global
 implicit none
-type (particle):: pat(1,maxnp)
-!type (imparticle):: imp(1,maxnp)
+type (particle):: pat(maxnp)
+!type (imparticle):: imp(maxnp)
 type (cell)::     cat(nx,ny,nz)
 integer:: i,j,k,ptype
 real:: time,x,y,z
@@ -5709,20 +5711,20 @@ np=np+1
 pnumber=pnumber+1
 if(np.le.maxnp)then
 !.initialize new particle
-  pat(1,np)%xyz(1)=x; pat(1,np)%xyz(2)=y; pat(1,np)%xyz(3)=z
-!  pat(1,np)%birth_place(1)=x; pat(1,np)%birth_place(2)=y; pat(1,np)%birth_place(3)=z
-  pat(1,np)%birth_day=time
-  pat(1,np)%pmass=pmass
-  pat(1,np)%pnumber=pnumber
-  pat(1,np)%ijk(1)=i; pat(1,np)%ijk(2)=j; pat(1,np)%ijk(3)=k
-  pat(1,np)%active=.true.                  
-  pat(1,np)%death_day=0.0  
+  pat(np)%xyz(1)=x; pat(np)%xyz(2)=y; pat(np)%xyz(3)=z
+!  pat(np)%birth_place(1)=x; pat(np)%birth_place(2)=y; pat(np)%birth_place(3)=z
+  pat(np)%birth_day=time
+  pat(np)%pmass=pmass
+  pat(np)%pnumber=pnumber
+  pat(np)%ijk(1)=i; pat(np)%ijk(2)=j; pat(np)%ijk(3)=k
+  pat(np)%active=.true.                  
+  pat(np)%death_day=0.0  
 !
   cat(i,j,k)%np_cell=cat(i,j,k)%np_cell+1       ! number of particles in cell
 !
   cat(i,j,k)%cmass=cat(i,j,k)%cmass+pmass   ! mass in cell
 ! log the bithplace in outp and tag with a NEGATIVE ip
-  write(ioutp)-pat(1,np)%pnumber  
+  write(ioutp)-pat(np)%pnumber  
   write(ioutp)x,y,z  
 else
   write(iout,*)' maxnp exceded'
@@ -5738,8 +5740,8 @@ subroutine addimp(time,x,y,z,i,j,k,pmass,imp,cat)
 !.....add a particle at location x,y,x,in cell, with masses pmass
 use global
 implicit none
-!type (particle):: pat(1,maxnp)
-type (imparticle):: imp(1,maxnp)
+!type (particle):: pat(maxnp)
+type (imparticle):: imp(maxnp)
 type (cell)::     cat(nx,ny,nz)
 integer:: i,j,k,ptype
 real:: time,x,y,z
@@ -5750,20 +5752,20 @@ nimp=nimp+1
 impnumber=impnumber+1
 if(nimp.le.maxnp)then
 !.initialize new IMMOBILE particle
-  imp(1,nimp)%xyz(1)=x; imp(1,np)%xyz(2)=y; imp(1,np)%xyz(3)=z
-!  pat(1,nimp)%birth_place(1)=x; pat(1,np)%birth_place(2)=y; pat(1,np)%birth_place(3)=z
-  imp(1,nimp)%birth_day=time
-  imp(1,nimp)%pmass=pmass
-  imp(1,nimp)%pnumber=impnumber
-  imp(1,nimp)%ijk(1)=i; imp(1,np)%ijk(2)=j; imp(1,np)%ijk(3)=k
-  imp(1,nimp)%active=.true.                  
-  imp(1,nimp)%death_day=0.0  
+  imp(nimp)%xyz(1)=x; imp(np)%xyz(2)=y; imp(np)%xyz(3)=z
+!  pat(nimp)%birth_place(1)=x; pat(np)%birth_place(2)=y; pat(np)%birth_place(3)=z
+  imp(nimp)%birth_day=time
+  imp(nimp)%pmass=pmass
+  imp(nimp)%pnumber=impnumber
+  imp(nimp)%ijk(1)=i; imp(np)%ijk(2)=j; imp(np)%ijk(3)=k
+  imp(nimp)%active=.true.                  
+  imp(nimp)%death_day=0.0  
 !
   cat(i,j,k)%nimp_cell=cat(i,j,k)%nimp_cell+1       ! number of particles in cell
 !
   cat(i,j,k)%cimmass=cat(i,j,k)%cmass+pmass   ! mass in cell
 ! log the bithplace in outp and tag with a NEGATIVE ip
-  write(ioutp)-imp(1,np)%pnumber  
+  write(ioutp)-imp(np)%pnumber  
   write(ioutp)x,y,z  
 else
   write(iout,*)' maxnp exceded'
@@ -5780,18 +5782,18 @@ subroutine updtp(io,jo,ko,i,j,k,ip,x,y,z,pat,cat)
 !.....update particle and cell attributes
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 integer:: i,j,k,io,jo,ko,ip
 real:: x,y,z
 !
 cat(io,jo,ko)%np_cell=cat(io,jo,ko)%np_cell-1
 cat(i,j,k)%np_cell=cat(i,j,k)%np_cell+1
-cat(io,jo,ko)%cmass=cat(io,jo,ko)%cmass-pat(1,ip)%pmass
-cat(i,j,k)%cmass=cat(i,j,k)%cmass+pat(1,ip)%pmass
+cat(io,jo,ko)%cmass=cat(io,jo,ko)%cmass-pat(ip)%pmass
+cat(i,j,k)%cmass=cat(i,j,k)%cmass+pat(ip)%pmass
 !
-pat(1,ip)%xyz(1)=x; pat(1,ip)%xyz(2)=y; pat(1,ip)%xyz(3)=z
-pat(1,ip)%ijk(1)=i; pat(1,ip)%ijk(2)=j; pat(1,ip)%ijk(3)=k
+pat(ip)%xyz(1)=x; pat(ip)%xyz(2)=y; pat(ip)%xyz(3)=z
+pat(ip)%ijk(1)=i; pat(ip)%ijk(2)=j; pat(ip)%ijk(3)=k
 return
 end
 !------------------------------------------------------------
@@ -5800,7 +5802,7 @@ end
 subroutine conserve(pat,cat)
 !.....check for cell-based particle and mass conservation 
 use global
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 integer i,j,k
 allocatable mcell(:,:,:,:),pcell(:,:,:)
@@ -5811,9 +5813,9 @@ allocate (mcell(nx,ny,nz,nspec),pcell(nx,ny,nz))
 mcell=0.
 pcell=0
 do ip=1,np
- i=pat(1,ip)%ijk(1); j=pat(1,ip)%ijk(2); k=pat(1,ip)%ijk(3)
+ i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3)
  do iloop=1,nspec
-   mcell(i,j,k,iloop)=mcell(i,j,k,iloop)+pat(1,ip)%pmass(iloop)
+   mcell(i,j,k,iloop)=mcell(i,j,k,iloop)+pat(ip)%pmass(iloop)
  enddo
  pcell(i,j,k)=pcell(i,j,k)+1
 enddo
@@ -5841,36 +5843,36 @@ subroutine removep(istart,pat,cat)
 ! remove tagged particles
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 integer:: i,j,k,ip,istart,i1,jj
 double precision:: pmass   ! DAB unneeded
 !.....remove those particles at end of array first
 jj=0
 do ip=np,istart,-1
-  if(pat(1,ip)%active) then
+  if(pat(ip)%active) then
     exit
   else
     jj=jj+1
 !.........update particle and cell attributes
-    i=pat(1,ip)%ijk(1)
-    j=pat(1,ip)%ijk(2)
-    k=pat(1,ip)%ijk(3)
+    i=pat(ip)%ijk(1)
+    j=pat(ip)%ijk(2)
+    k=pat(ip)%ijk(3)
     cat(i,j,k)%np_cell=cat(i,j,k)%np_cell-1
-    cat(i,j,k)%cmass=cat(i,j,k)%cmass-pat(1,ip)%pmass
-    mass=mass-pat(1,ip)%pmass
+    cat(i,j,k)%cmass=cat(i,j,k)%cmass-pat(ip)%pmass
+    mass=mass-pat(ip)%pmass
 !.........log particle removal for output in plotd
     cat(i,j,k)%np_remove=cat(i,j,k)%np_remove+1
-    cat(i,j,k)%mass_remove=cat(i,j,k)%mass_remove+pat(1,ip)%pmass
+    cat(i,j,k)%mass_remove=cat(i,j,k)%mass_remove+pat(ip)%pmass
 !.........log particle removal in output file
-    write(ioutp)pat(1,ip)%pnumber !,'(1x,i15,1x,8(G15.5,1x),10G15.5,3(1x,i6))')&  
+    write(ioutp)pat(ip)%pnumber !,'(1x,i15,1x,8(G15.5,1x),10G15.5,3(1x,i6))')&  
     write(ioutp)& !,'(1x,i15,1x,8(G15.5,1x),G15.5,3(1x,i6))')&
-    pat(1,ip)%birth_day,pat(1,ip)%death_day,&  
-!    pat(1,ip)%birth_place(1),pat(1,ip)%birth_place(2),pat(1,ip)%birth_place(3),&
-    pat(1,ip)%xyz(1),pat(1,ip)%xyz(2),pat(1,ip)%xyz(3),&
-    pat(1,ip)%pmass,i,j,k
+    pat(ip)%birth_day,pat(ip)%death_day,&  
+!    pat(ip)%birth_place(1),pat(ip)%birth_place(2),pat(ip)%birth_place(3),&
+    pat(ip)%xyz(1),pat(ip)%xyz(2),pat(ip)%xyz(3),&
+    pat(ip)%pmass,i,j,k
 !    write(*,*)& !,'(1x,i15,1x,8(G15.5,1x),G15.5,3(1x,i6))')&
-!    pat(1,ip)%pnumber,pat(1,ip)%death_day,i,j,k
+!    pat(ip)%pnumber,pat(ip)%death_day,i,j,k
   endif
 enddo
 np=np-jj
@@ -5878,28 +5880,28 @@ jj=0
 i1=np
 !.....now remove the rest
 do ip=np,istart,-1
-  if(.not.pat(1,ip)%active)then
+  if(.not.pat(ip)%active)then
 !....update particle and cell attributes
-    i=pat(1,ip)%ijk(1)
-    j=pat(1,ip)%ijk(2)
-    k=pat(1,ip)%ijk(3)
+    i=pat(ip)%ijk(1)
+    j=pat(ip)%ijk(2)
+    k=pat(ip)%ijk(3)
     cat(i,j,k)%np_cell=cat(i,j,k)%np_cell-1
-    cat(i,j,k)%cmass=cat(i,j,k)%cmass-pat(1,ip)%pmass
+    cat(i,j,k)%cmass=cat(i,j,k)%cmass-pat(ip)%pmass
 !.........log particle removal for output in plotd
     cat(i,j,k)%np_remove=cat(i,j,k)%np_remove+1
-    cat(i,j,k)%mass_remove=cat(i,j,k)%mass_remove+pat(1,ip)%pmass
-    mass=mass-pat(1,ip)%pmass
+    cat(i,j,k)%mass_remove=cat(i,j,k)%mass_remove+pat(ip)%pmass
+    mass=mass-pat(ip)%pmass
 !.........log particle removal in output file
-    write(ioutp)pat(1,ip)%pnumber !,'(1x,i15,1x,8(G15.5,1x),10G15.5,3(1x,i6))')&  
+    write(ioutp)pat(ip)%pnumber !,'(1x,i15,1x,8(G15.5,1x),10G15.5,3(1x,i6))')&  
     write(ioutp) & !,'(1x,i15,1x,8(G15.5,1x),G15.5,3(1x,i6))')&
-    pat(1,ip)%birth_day,pat(1,ip)%death_day,&  
-!    pat(1,ip)%birth_place(1),pat(1,ip)%birth_place(2),pat(1,ip)%birth_place(3),&
-    pat(1,ip)%xyz(1),pat(1,ip)%xyz(2),pat(1,ip)%xyz(3),&
-    pat(1,ip)%pmass,i,j,k
+    pat(ip)%birth_day,pat(ip)%death_day,&  
+!    pat(ip)%birth_place(1),pat(ip)%birth_place(2),pat(ip)%birth_place(3),&
+    pat(ip)%xyz(1),pat(ip)%xyz(2),pat(ip)%xyz(3),&
+    pat(ip)%pmass,i,j,k
 !    write(*,*)& !,'(1x,i15,1x,8(G15.5,1x),G15.5,3(1x,i6))')&
-!    pat(1,ip)%pnumber,pat(1,ip)%death_day,i,j,k
+!    pat(ip)%pnumber,pat(ip)%death_day,i,j,k
 !
-    pat(1,ip)=pat(1,i1)
+    pat(ip)=pat(i1)
 !
     i1=i1-1
     jj=jj+1
@@ -5917,7 +5919,7 @@ subroutine reflects(timeleft,pat,cat,x,y,z,ip)
 ! reflect partcles at edges of domain
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 integer:: idir,ip
 real:: x,y,z,timeleft
@@ -5951,9 +5953,9 @@ do idir=1,3
 !...Is particle outside of active domain?
     if(xyzd(idir).ge.sngl(xyzl2(idir)))then
 !.....check for out of bounds, update breakthrough counters, and tag partcle for removal
-      pat(1,ip)%active=.false.    ! tag particle for removal
-      pat(1,ip)%death_day=curtime-timeleft  
-      pmass=pat(1,ip)%pmass 
+      pat(ip)%active=.false.    ! tag particle for removal
+      pat(ip)%death_day=curtime-timeleft  
+      pmass=pat(ip)%pmass 
       if(xyz(idir).ge.sngl(xyzmax(idir))) then
         netxyzp(idir)=netxyzp(idir)-1
   do iloop=1,nspec
@@ -5982,7 +5984,7 @@ subroutine reflect(timeleft,pat,cat,x,y,z,ip)
 ! reflect partcles at edges of domain
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 integer:: idir,ip
 real:: x,y,z,timeleft
@@ -6007,9 +6009,9 @@ do idir=1,3
 !...Is particle outside of active domain?
     if(xyzd(idir).ge.xyzl2(idir))then
 !.....check for out of bounds, update breakthrough counters, and tag partcle for removal
-      pat(1,ip)%active=.false.    ! tag particle for removal
-      pat(1,ip)%death_day=curtime-timeleft  
-      pmass=pat(1,ip)%pmass 
+      pat(ip)%active=.false.    ! tag particle for removal
+      pat(ip)%death_day=curtime-timeleft  
+      pmass=pat(ip)%pmass 
       if(xyz(idir).ge.xyzmax(idir)) then
         netxyzp(idir)=netxyzp(idir)-1
   do iloop=1,nspec
@@ -6039,7 +6041,7 @@ subroutine absorb(pat,cat,bounds,vel3,por,ret,kx,ky,kz,i,j,k,ip,dtmin,timeleft,&
 x,y,z)
 use global
 implicit none
-type (particle):: pat(1,maxnp)
+type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 type (boundary):: bounds(1:maxbnd)
 ! tag particles in absorbing boundaries for removal
@@ -6055,28 +6057,28 @@ ibounds=cat(i,j,k)%bc_number
 itype=bounds(ibounds)%bc_type
 !.....constant conc. boundaries (updatad only at tnextsrc)
 if((itype.eq.1).and.(curtime.eq.tnextsrc).and.(timeleft.eq.0.))then
-  pat(1,ip)%active=.false.
-  pat(1,ip)%death_day=curtime-timeleft  
+  pat(ip)%active=.false.
+  pat(ip)%death_day=curtime-timeleft  
 !.......removal counters
   bounds(ibounds)%np_remove=bounds(ibounds)%np_remove-1
-  bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-pat(1,ip)%pmass
+  bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-pat(ip)%pmass
   npbc(itype)=npbc(itype)-1
   do iloop=1,nspec
-     massbc(itype,iloop)=massbc(itype,iloop)-pat(1,ip)%pmass(iloop)
+     massbc(itype,iloop)=massbc(itype,iloop)-pat(ip)%pmass(iloop)
   enddo
-!  massbc(itype)=massbc(itype)-pat(1,ip)%pmass
+!  massbc(itype)=massbc(itype)-pat(ip)%pmass
 !.absorbing boundary
 elseif(itype.eq.3)then
-  pat(1,ip)%active=.false.
-  pat(1,ip)%death_day=curtime-timeleft  
+  pat(ip)%active=.false.
+  pat(ip)%death_day=curtime-timeleft  
 !.removal counters
   bounds(ibounds)%np_remove=bounds(ibounds)%np_remove-1
-  bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-pat(1,ip)%pmass
+  bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-pat(ip)%pmass
   npbc(itype)=npbc(itype)-1
   do iloop=1,nspec
-     massbc(itype,iloop)=massbc(itype,iloop)-pat(1,ip)%pmass(iloop)
+     massbc(itype,iloop)=massbc(itype,iloop)-pat(ip)%pmass(iloop)
   enddo
-!  massbc(itype)=massbc(itype)-pat(1,ip)%pmass
+!  massbc(itype)=massbc(itype)-pat(ip)%pmass
 !.absorbing boundary with computed or specified flux
 elseif(itype.eq.4.or.itype.eq.5)then
   if(itype.eq.4)then
@@ -6091,16 +6093,16 @@ elseif(itype.eq.4.or.itype.eq.5)then
 !.probability of absorbing based on dtmin*flux/volume of voids in cell
   prob=dtmin*q/(dtmin*q+vol*por(cat(i,j,k)%zone)*ret(cat(i,j,k)%zone))
   if(randu01().lt.prob)then
-    pat(1,ip)%active=.false.
-    pat(1,ip)%death_day=curtime-timeleft  
+    pat(ip)%active=.false.
+    pat(ip)%death_day=curtime-timeleft  
 !...removal counters
     bounds(ibounds)%np_remove=bounds(ibounds)%np_remove-1
-    bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-pat(1,ip)%pmass
+    bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-pat(ip)%pmass
     npbc(itype)=npbc(itype)-1
   do iloop=1,nspec
-     massbc(itype,iloop)=massbc(itype,iloop)-pat(1,ip)%pmass(iloop)
+     massbc(itype,iloop)=massbc(itype,iloop)-pat(ip)%pmass(iloop)
   enddo
-!    massbc(itype)=massbc(itype)-pat(1,ip)%pmass
+!    massbc(itype)=massbc(itype)-pat(ip)%pmass
   endif
 elseif(itype.eq.7)then
   q=bke*((vel3(1,kx,j,k)-vel3(1,i,j,k))*ax+&
@@ -6112,16 +6114,16 @@ elseif(itype.eq.7)then
     fluxout=bounds(ibounds)%fluxout
     if(fluxout.ge.0.0)then
 !.....MAW boundary has no flow into aquifer - just remove particle 
-      pat(1,ip)%active=.false.
-      pat(1,ip)%death_day=curtime-timeleft  
+      pat(ip)%active=.false.
+      pat(ip)%death_day=curtime-timeleft  
 !.....removal counters
       bounds(ibounds)%np_remove=bounds(ibounds)%np_remove-1
-      bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-pat(1,ip)%pmass
+      bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-pat(ip)%pmass
       npbc(itype)=npbc(itype)-1
   do iloop=1,nspec
-     massbc(itype,iloop)=massbc(itype,iloop)-pat(1,ip)%pmass(iloop)
+     massbc(itype,iloop)=massbc(itype,iloop)-pat(ip)%pmass(iloop)
   enddo
-!      massbc(itype)=massbc(itype)-pat(1,ip)%pmass
+!      massbc(itype)=massbc(itype)-pat(ip)%pmass
     else
 !.....MAW boundary flowing into system - remove mass from particle and move particle in well
 !
@@ -6132,13 +6134,13 @@ elseif(itype.eq.7)then
       fmassout=min(abs(fluxout),fluxin)/fluxin ! fraction transferred
       fmassin=1.0-fmassout ! fraction absorbed
 !.....account for mass leaving well - this is the mass that leaves the domain 
-      bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-dble(fmassin)*pat(1,ip)%pmass
+      bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-dble(fmassin)*pat(ip)%pmass
   do iloop=1,nspec
-     massbc(itype,iloop)=massbc(itype,iloop)-dble(fmassin)*pat(1,ip)%pmass(iloop)
+     massbc(itype,iloop)=massbc(itype,iloop)-dble(fmassin)*pat(ip)%pmass(iloop)
   enddo
-!      massbc(itype)=massbc(itype)-dble(fmassin)*pat(1,ip)%pmass
+!      massbc(itype)=massbc(itype)-dble(fmassin)*pat(ip)%pmass
 !.....change particle mass
-      pat(1,ip)%pmass=pat(1,ip)%pmass*dble(fmassout) ! updated particle mass transferred to new location
+      pat(ip)%pmass=pat(ip)%pmass*dble(fmassout) ! updated particle mass transferred to new location
 !.....Find beginning of MAW boundary
       ibou=ibounds
       numbnd=bounds(ibounds)%group
@@ -6240,7 +6242,7 @@ elseif(itype.eq.7)then
       k=kk
       x=xmbc+dxbc*randu01(); y=ymbc+dybc*randu01(); z=zmbc+dzbc*randu01()
 !.....account for mass entering boundary
-      bounds(ibou)%maw=bounds(ibou)%maw+pat(1,ip)%pmass
+      bounds(ibou)%maw=bounds(ibou)%maw+pat(ip)%pmass
     endif
   endif
 endif

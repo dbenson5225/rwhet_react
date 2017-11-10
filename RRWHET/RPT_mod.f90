@@ -63,11 +63,12 @@ module RPT_mod
 !   This subroutine packs into Dloc, for each active particle, the first term
 !   [f*a_T|v| + g*Dm]I
 
-        type(particle),  intent(inout) :: pat(:) ! immobile particle array
-!        type(imparticle),intent(inout) :: imp(:) ! mobile particle array
+        type(particle),  intent(inout) :: pat(:) ! mobile particle array
+!    This is left with 2 dimensions to allow for different "type" particles later.
+
         type(cell), intent(in)         :: cat(nx,ny,nz)   ! cell info (incl. diff)
         integer, allocatable           :: alive(:),indices(:)
-        double precision, intent(in)   :: ddiff(:),dtran(:)
+        real, intent(in)               :: ddiff(:),dtran(:)
         integer                        :: i,j,k
         double precision, allocatable  :: Dloc(:)  ! mixing portion of D at alive pats
         integer                        :: na, aindex
@@ -80,7 +81,7 @@ module RPT_mod
     do iloop=1,na
           aindex=alive(iloop)
           i=pat(aindex)%ijk(1); j=pat(aindex)%ijk(2); k=pat(aindex)%ijk(3) 
-          Dloc(iloop)=difffrac*ddiff(cat(i,j,k)%zone)+dtranfrac*dtran(cat(i,j,k)%zone)
+          Dloc(iloop)=dble(difffrac*ddiff(cat(i,j,k)%zone)+dtranfrac*dtran(cat(i,j,k)%zone))
     enddo
 
 
@@ -93,16 +94,17 @@ module RPT_mod
     ! this subroutine does the probabilistic mass balancing according to the
     ! algorithm set forth in Benson and Bolster, "Arbitrarily complex reactions
     ! on particles," WRR 2016
-    subroutine mix_particles(imp,pat,cat,ddiff,dt,closeguys,close_dists,Dloc,alive)
-        type(particle),  intent(inout) :: pat(:) ! immobile particle array
-        type(imparticle),intent(inout) :: imp(:) ! mobile particle array
+    subroutine mix_particles(imp,pat,cat,dt,closeguys,close_dists,Dloc,alive)
+        type(particle),  intent(inout) :: pat(:) ! mobile particle array
+!    This is left with 2 dimensions to allow for different "type" particles later.
+        type(imparticle),intent(inout) :: imp(:) ! immobile particle array
         type(cell), intent(in)         :: cat(nx,ny,nz)   ! cell info (incl. diff)
         type(kdtree2), pointer         :: tree ! this is the KD tree
         type(index_array), intent(inout), allocatable  :: closeguys(:)
             ! this holds the indices of nearby particles
         type(dist_array), intent(inout), allocatable   :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
-        double precision, intent(in)   :: ddiff(:), Dloc(:), dt
+        double precision, intent(in)   :: Dloc(:), dt
         integer, intent(in)            :: alive(:)
  !       integer, allocatable           :: indices(:)
             ! number and array of indices of active mobile particles and number
@@ -155,9 +157,6 @@ module RPT_mod
 
    do iloop=1,na
          locs(1:dim,iloop) = real(pat(alive(iloop))%xyz, kdkind)
-!          aindex=alive(iloop)
-!          i=pat(aindex)%ijk(1); j=pat(aindex)%ijk(2); k=pat(aindex)%ijk(3) 
-!          Dloc(iloop)=ddiff(cat(i,j,k)%zone)
    enddo
 
    do iloop=na+1,ntot
@@ -322,9 +321,9 @@ subroutine abc_react(imp,pat,cat,closeguys,close_dists,Dloc,dt,alive)
        double precision, allocatable  :: dmA(:), dmB(:), dmC(:), ds(:), pmass(:), v_s(:) 
        double precision               :: dm, dmAtemp, dmBtemp,kr,kf,stoA,stoB,stoC,totwgt,&
                                          denom1,x,y,z,weight
-       integer                        :: iloop,jloop,numjs,ntot,bindex,i,j,k,na,ni
+       integer                        :: iloop,jloop,numjs,ntot,aindex,bindex,i,j,k,na,ni
        integer, allocatable           :: indys(:)
-       double precision               :: conc(nspec),iconc(inspec)
+       double precision               :: conc(nspec),iconc(inspec),curtime
     
 
 !  Define stoichiometry and rates here (read this in in later versions?)
@@ -344,18 +343,18 @@ allocate (indys(ntot))  ! Maximum possible size
 v_s=0.d0
 pmass=0.d0 
 do iloop=1,na   !  These are the mobiles
-
-     conc=(pat(iloop)%pmass)/pat(iloop)%ds   
+     aindex=alive(iloop)    !  This is the actual pat number (there are only na alive)
+     conc=(pat(aindex)%pmass)/pat(aindex)%ds   
      dm = kf*dt*(conc(1)/ds(iloop))**stoA*(conc(2)/ds(iloop))**stoB
 
-     dmAtemp=min(stoA*dm,pat(iloop)%pmass(1))
-     dmBtemp=min(stoB*dm,pat(iloop)%pmass(2))
+     dmAtemp=min(stoA*dm,pat(aindex)%pmass(1))
+     dmBtemp=min(stoB*dm,pat(aindex)%pmass(2))
      dm=min(dmAtemp/stoA,dmBtemp/stoB)
     
-     pat(iloop)%pmass(1)=pat(iloop)%pmass(1)-stoA*dm
-     pat(iloop)%pmass(2)=pat(iloop)%pmass(2)-stoB*dm
+     pat(aindex)%pmass(1)=pat(aindex)%pmass(1)-stoA*dm
+     pat(aindex)%pmass(2)=pat(aindex)%pmass(2)-stoB*dm
      dmC(iloop)=stoC*dm             !  need to put this on a solid particle
-!  If I do it here I lose future paralellism, so beware
+!  If I do it here I lose future parallelism, so beware
 !  Find out how many immobile particle are nearby
 !  indys holds the indexes for all particles (1:na then na+1:not)
 !  The index in the imp array is the indy - na
@@ -364,8 +363,8 @@ do iloop=1,na   !  These are the mobiles
      
      if(numjs.lt.1) then
 ! make an imp here
-         i=pat(iloop)%ijk(1); j=pat(iloop)%ijk(2); k=pat(iloop)%ijk(3) 
-         x=pat(iloop)%xyz(1); y=pat(iloop)%xyz(2); z=pat(iloop)%xyz(1)
+         i=pat(aindex)%ijk(1); j=pat(aindex)%ijk(2); k=pat(aindex)%ijk(3) 
+         x=pat(aindex)%xyz(1); y=pat(aindex)%xyz(2); z=pat(aindex)%xyz(1)
          pmass(1)=dmC(iloop)
          call addimp(real(curtime),x,y,z,i,j,k,pmass,imp,cat) 
      else
