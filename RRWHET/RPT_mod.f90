@@ -310,7 +310,7 @@ subroutine abc_react(imp,pat,cat,closeguys,close_dists,Dloc,dt,alive)
 
        type(particle),  intent(inout) :: pat(:) ! immobile particle array
        type(imparticle),intent(inout) :: imp(:) ! mobile particle array
-       type(cell),      intent(in)    :: cat(nx,ny,nz)   ! cell info (incl. diff)
+       type(cell),      intent(inout) :: cat(nx,ny,nz)   ! cell info (incl. diff)
        type(index_array), intent(in)  :: closeguys(:)
             ! this holds the indices of nearby particles
        type(dist_array), intent(in)   :: close_dists(:)
@@ -353,7 +353,7 @@ do iloop=1,na   !  These are the mobiles
     
      pat(aindex)%pmass(1)=pat(aindex)%pmass(1)-stoA*dm
      pat(aindex)%pmass(2)=pat(aindex)%pmass(2)-stoB*dm
-     dmC(iloop)=stoC*dm             !  need to put this on a solid particle
+     pmass(1)=stoC*dm             !  need to put this on a solid particle
 !  If I do it here I lose future parallelism, so beware
 !  Find out how many immobile particle are nearby
 !  indys holds the indexes for all particles (1:na then na+1:not)
@@ -365,7 +365,6 @@ do iloop=1,na   !  These are the mobiles
 ! make an imp here
          i=pat(aindex)%ijk(1); j=pat(aindex)%ijk(2); k=pat(aindex)%ijk(3) 
          x=pat(aindex)%xyz(1); y=pat(aindex)%xyz(2); z=pat(aindex)%xyz(1)
-         pmass(1)=dmC(iloop)
          call addimp(real(curtime),x,y,z,i,j,k,pmass,imp,cat) 
      else
 ! Place solids on nearby imp particles weighted by prob. of collision
@@ -388,13 +387,18 @@ do iloop=1,na   !  These are the mobiles
         do jloop=1, numjs 
                 weight=v_s(jloop)/totwgt
                 bindex = closeguys(iloop)%indices(indys(jloop)) - na 
-                imp(bindex)%pmass(1)=weight*stoC*dmC(iloop)
+
+!  Update both particle and cell masses        
+! DAB Seems slow to continuously update cat properties!  Also should put in bulk density?                   
+                i=imp(bindex)%ijk(1); j=imp(bindex)%ijk(2); k=imp(bindex)%ijk(3) 
+                imp(bindex)%pmass = imp(bindex)%pmass + weight*pmass
+                cat(i,j,k)%cimmass= cat(i,j,k)%cimmass+ weight*pmass
         enddo
 
     endif   
 enddo  !!!!  end of loop through mobile reactions and precipitation
 
-!  Do the reverse reaction
+!  Do the reverse reaction  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 do iloop=1,ni    !  This will stay parallel
 
@@ -406,22 +410,31 @@ do iloop=1,ni    !  This will stay parallel
      dmA(iloop)=(stoA/stoC)*dm        ! Store for later delivery to mobile particles
      dmB(iloop)=(stoB/stoC)*dm    
      imp(iloop)%pmass(1)=imp(iloop)%pmass(1)-dm
+
+! DAB Seems slow to continuously update cat properties!  Also should put in bulk density?
+
+     i=imp(iloop)%ijk(1); j=imp(iloop)%ijk(2); k=imp(iloop)%ijk(3) 
+     cat(i,j,k)%cimmass(1)=cat(i,j,k)%cimmass(1)-dm
+
 enddo
 
 do iloop=1,ni
 
 ! find close mobile particles to give newly dissolved mass to
-!  Remember that the immobile particles site after ni mobiles in the closeguys array
+!  Remember that the immobile particles sit after ni mobiles in the closeguys array
 
     numjs=size(closeguys(ni+iloop)%indices<=na)
     indys(1:numjs)=pack(closeguys(ni+iloop)%indices,closeguys(ni+iloop)%indices<=na)     
+!  make the pmass vector that must be placed into mobiles    
+    pmass(1)=dmA(iloop); pmass(2)=dmB(iloop)    ! etc. etc. if needed
+
     if(numjs.lt.1) then
 ! make a new pat here
          i=imp(iloop)%ijk(1); j=imp(iloop)%ijk(2); k=imp(iloop)%ijk(3) 
          x=imp(iloop)%xyz(1); y=imp(iloop)%xyz(2); z=imp(iloop)%xyz(1)
-         pmass(1)=dmA(iloop); pmass(2)=dmB(iloop)    ! etc. etc. if needed
          call addp(real(curtime),x,y,z,i,j,k,pmass,pat,cat) 
-     else
+ 
+    else
 ! Place dissolved solids on nearby pat particles weighted by prob. of collision
         v_s=0.d0
 
@@ -441,7 +454,11 @@ do iloop=1,ni
         do jloop=1, numjs 
                 weight=v_s(jloop)/totwgt
                 bindex = closeguys(ni+iloop)%indices(indys(jloop)) 
-                pat(bindex)%pmass=weight*stoC*pmass
+                pat(bindex)%pmass=pat(bindex)%pmass+weight*stoC*pmass
+!  DAB Do I need to do this???
+        i=pat(bindex)%ijk(1); j=pat(bindex)%ijk(2); k=pat(bindex)%ijk(3) 
+        cat(i,j,k)%cmass=cat(i,j,k)%cmass+weight*stoC*pmass
+
         enddo
 
    endif

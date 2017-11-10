@@ -137,7 +137,7 @@ module global
 ! npack           -   number of packages
 ! noc             -   number of output control packages (options)
 
-  integer, parameter:: npack=8,nopc=7,nbtype=11
+  integer, parameter:: npack=8,nopc=8,nbtype=11
   real, parameter:: large=1.0e+10,small=1.0e-4,bcdxyz=0.01
   character (len=80), parameter:: version=' ------------ R e a c t i v e  R W H e t   V e r s i o n  1.0 ------------------'
 !
@@ -238,7 +238,7 @@ character (len=80),allocatable:: outfname(:)
 real:: stoA,stoB,stoC
 !
 integer:: iread_error,ierror,idir,inodes,iicat,istat,itype
-integer:: iplotm,iplotc,iplotd,iplotb,iplotp,iploti,iplotr,iplotsc,iplotsm,icnf,imt3d
+integer:: iplotm,iplotc,iplotd,iplotb,iplotp,iploti,iplotr,iplotsc,iplotsm,icnf,imt3d,iplotsolid
 logical:: flexist
 !
 real:: tarray(2)
@@ -274,7 +274,7 @@ iplotsc=28
 iplotsm=29
 icnf=30
 imt3d=31
-isolid=32
+iplotsolid=32
 !
 !.....OPEN MAIN INPUT AND OUTPUT FILES
 !
@@ -414,6 +414,7 @@ outunit(5)=iplotp
 outunit(6)=iploti
 outunit(7)=iplotsc
 outunit(8)=iplotsm
+outunit(9)=iplotsolid
 !
 !.....PARAMETERS
 !
@@ -591,7 +592,6 @@ else
     stop ' Must use interp=1 for anisotropic dispersion tensor'
   endif
 endif
-! ELB 7-9-01 call output(opc,outunit,outfname,pat,cat,vel3,bounds,por,ret,decay)
 !.....deallocate memory
 if(ibug.ge.1)then;string(1)=' DEALLOCATE MEMORY!';call debug(ibugout,string,nline);endif
 deallocate (vel3)
@@ -4487,7 +4487,8 @@ return
              ' breakthrough counters      :',3x,a/&
              ' particle locations         :',3x,a/&
              ' internal boundary counters :',3x,a/&
-             ' monitoring                 :',3x,a//)
+             ' monitoring                 :',3x,a/&
+             ' solid concentrations       :',3x,a//)
 
 return
 9999 write(iout,*)' Error reading output control file '
@@ -4608,6 +4609,8 @@ double precision masstotal(nspec)
 ! opc(4)      -BREAKTHROUGH COUNTERS     
 ! opc(5)      -PARTICLE LOCATIONS
 ! opc(6)      -INTERNAL BOUNDARY BREAKTHROUGH COUNTERS
+! opc(8)      -SAMPLES
+! opc(8)      -SOLID CONCENTRATIONS
 if(opc(1).ge.1)call plotm(pat,outunit(1),outfname(1),cat)
 if(opc(2).ge.1)call plotc(cat,outunit(2),opc,por,ret)
 if(opc(2).ge.3)call plotmt3d(outfname(2),cat,imt3d,opc,por,ret) ! mt3d output
@@ -4616,6 +4619,7 @@ if(opc(4).ge.1)call plotb(outunit(4),opc)
 if(opc(5).eq.1)call plotp(pat,outunit(5))
 if(opc(6).ge.1)call ploti(bounds,outunit(6),opc)
 if(opc(7).ge.1)call plots(sam,pat,cat,vel3,por,ret,outunit(7),outunit(8))
+if(opc(8).ge.1)call plotsolid(cat,outunit(9),opc)
 !.store current output control for output to summary file
 do iopc=1,nopc
   opcnow(iopc)=opc(iopc)
@@ -4928,6 +4932,69 @@ do icl=1,ncl
   if(opc(2).eq.1)ncell2(n)=cat(i,j,k)%np_cell
   do iloop=1,nspec
   if(opc(2).eq.2)cell2(n,iloop)=cat(i,j,k)%cmass(iloop)/dble(vol*por(cat(i,j,k)%zone)*ret(cat(i,j,k)%zone))
+  enddo
+  n=n+1
+enddo
+! DAB formatted output
+write(iunit,*)sngl(curtime),ncl
+write(iunit,*)ncell1
+if(opc(2).eq.1)write(iunit,*)ncell2
+do iloop=1,nspec
+write(iunit,*)iloop
+if(opc(2).eq.2)write(iunit,*)cell2(:,iloop)
+enddo
+
+! clean house
+deallocate (ncellt)
+deallocate (ncell1)
+if(opc(2).eq.1)deallocate (ncell2)
+if(opc(2).eq.2)deallocate (cell2)
+return
+end
+!---------------------------------------------------------------------
+! plotsolid
+!---------------------------------------------------------------------
+subroutine plotsolid(cat,iunit,opc)
+! plot particle density and concentration 
+use global
+type (cell)::     cat(nx,ny,nz)
+integer opc(nopc)
+!real:: por(nzone),ret(nzone)
+integer,allocatable:: ncell2(:)
+integer,allocatable:: ncell1(:),ncellt(:)                    
+real,allocatable:: cell2(:,:)  
+integer:: i,j,k,ijk                  
+data iflag/1/
+!.cell number and np file
+if(iflag.eq.1)then
+! DAB formatted output
+  write(iunit,*)nx,ny,nz,dx,dy,dz,nspec
+  iflag=0
+endif
+ncl=0 
+allocate (ncellt(1:nxyz), STAT = ierror)
+do i=1,nx; do j=1,ny; do k=1,nz
+   if(cat(i,j,k)%nimp_cell.ne.0)then
+     ncl=ncl+1
+     ijk=i+(j-1)*nx+(k-1)*nxy
+     ncellt(ncl)=ijk
+   endif
+enddo; enddo; enddo
+allocate (ncell1(1:ncl), STAT = ierror)
+if(ierror.ne.0)stop ' error allocating memory in plotc'
+if(opc(2).eq.1)allocate (ncell2(1:ncl), STAT = ierror)
+if(opc(2).eq.2)allocate (cell2(1:ncl,1:nspec), STAT = ierror)
+if(ierror.ne.0)stop ' error allocating memory in plotc'
+n=1
+do icl=1,ncl
+  ijk=ncellt(icl)
+  k=(ijk-1)/nxy+1
+  j=(ijk-1-(k-1)*nxy)/nx+1
+  i= ijk-(k-1)*nxy-(j-1)*nx  
+  ncell1(n)=ijk  
+  if(opc(8).eq.1)ncell2(n)=cat(i,j,k)%nimp_cell
+  do iloop=1,inspec
+    if(opc(8).eq.2)cell2(n,iloop)=cat(i,j,k)%cimmass(iloop)/dble(vol)
   enddo
   n=n+1
 enddo
@@ -5763,7 +5830,7 @@ if(nimp.le.maxnp)then
 !
   cat(i,j,k)%nimp_cell=cat(i,j,k)%nimp_cell+1       ! number of particles in cell
 !
-  cat(i,j,k)%cimmass=cat(i,j,k)%cmass+pmass   ! mass in cell
+  cat(i,j,k)%cimmass=cat(i,j,k)%cimmass+pmass   ! mass in cell
 ! log the bithplace in outp and tag with a NEGATIVE ip
   write(ioutp)-imp(np)%pnumber  
   write(ioutp)x,y,z  
