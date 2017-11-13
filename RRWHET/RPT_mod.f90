@@ -50,7 +50,7 @@ module RPT_mod
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    subroutine D_partition (pat,cat,dtran,ddiff,Dloc,alive)
+    subroutine D_partition (pat,cat,dtran,ddiff)
 
 !   I can give any or all of the dispersion tensor to the particle mixing and\or reaction
 !   subroutines.  But I have to take it away from the RW.  It is conceptually easiest that
@@ -70,21 +70,21 @@ module RPT_mod
         integer, allocatable           :: alive(:),indices(:)
         real, intent(in)               :: ddiff(:),dtran(:)
         integer                        :: i,j,k
-        double precision, allocatable  :: Dloc(:)  ! mixing portion of D at alive pats
+        double precision               :: Dloc  ! mixing portion of D at alive pats
         integer                        :: na, aindex
  
     na = count(pat%active)
-    allocate(indices(maxnp),alive(na),Dloc(na))
+    allocate(indices(maxnp),alive(na))
     indices = (/(iloop, iloop = 1, maxnp)/) ! this is for easy array-indexing of pat
     alive = pack(indices, pat%active)
     Dloc=0.d0
     do iloop=1,na
           aindex=alive(iloop)
           i=pat(aindex)%ijk(1); j=pat(aindex)%ijk(2); k=pat(aindex)%ijk(3) 
-          Dloc(iloop)=dble(difffrac*ddiff(cat(i,j,k)%zone)+dtranfrac*dtran(cat(i,j,k)%zone))
+          Dloc=dble(difffrac*ddiff(cat(i,j,k)%zone)+dtranfrac*dtran(cat(i,j,k)%zone))
+          pat(aindex)%dmix=Dloc
     enddo
-deallocate (indices)
-
+deallocate (indices,alive)
 
     end subroutine D_partition
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -94,7 +94,8 @@ deallocate (indices)
     ! this subroutine does the probabilistic mass balancing according to the
     ! algorithm set forth in Benson and Bolster, "Arbitrarily complex reactions
     ! on particles," WRR 2016
-    subroutine mix_particles(imp,pat,cat,dt,closeguys,close_dists,Dloc,alive)
+
+    subroutine mix_particles(imp,pat,cat,closeguys,close_dists,dt)
         type(particle),  intent(inout) :: pat(:) ! mobile particle array
 !    This is left with 2 dimensions to allow for different "type" particles later.
         type(imparticle),intent(inout) :: imp(:) ! immobile particle array
@@ -104,9 +105,9 @@ deallocate (indices)
             ! this holds the indices of nearby particles
         type(dist_array), intent(inout), allocatable   :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
-        double precision, intent(in)   :: Dloc(:), dt
-        integer, intent(in)            :: alive(:)
- !       integer, allocatable           :: indices(:)
+        double precision, intent(in)   :: dt
+ !       integer, intent(in)            :: alive(:)
+        integer, allocatable           :: indices(:),alive(:)
             ! number and array of indices of active mobile particles and number
             ! of immobile particles
         integer                        :: na, ni, ntot, dim = 3, aindex, bindex,&
@@ -116,11 +117,11 @@ deallocate (indices)
             ! and a couple of loop iterators
             !****Note: hard coded one spatial dimension
         real(kdkind)                   :: r2
-        real(kdkind),allocatable       :: locs(:,:)           ! locs(d,n)
+        real(kdkind),allocatable       :: locs(:,:)        ! locs(d,n)
             ! array holding locations of immobile and active immobile particles
             ! and value of squared search radius for KD search
 
-        double precision, allocatable  :: const(:),denom(:),dmass(:),dmA(:), ds(:)
+        double precision, allocatable  :: const(:),denom(:),dmass(:),dmA(:),ds(:),Dloc(:)   
         double precision               :: v_s,denom1,const1
  
         logical::im_transfer
@@ -138,11 +139,16 @@ deallocate (indices)
      ni = count(imp%active)
      ntot = na+ni
 
+     allocate(indices(maxnp),alive(na))
+     indices = (/(iloop, iloop = 1, maxnp)/) ! this is for easy array-indexing of pat
+     alive = pack(indices, pat%active)
+
      allocate(locs(dim,na+ni))
      allocate(const(ntot),denom(ntot),ds(ntot))
-     allocate(closeguys(ntot),close_dists(ntot))
+     allocate(closeguys(ntot),close_dists(ntot),Dloc(na))
      
-     ds(1:na)=real(pat(alive)%ds, kdkind)
+     ds(1:na)=pat(alive)%ds
+     Dloc(1:na)=pat(alive)%dmix
 
 !     if(im_transfer) then
 !         ntot=na+ni
@@ -247,6 +253,10 @@ print*,shape(closeguys)
                 pat(bindex)%pmass = pat(bindex)%pmass + dmass
             enddo
          enddo
+deallocate(dmass)
+deallocate(locs)
+deallocate(const,denom,ds)
+
 
 !   Loop over immobile particles
 
@@ -298,10 +308,13 @@ print*,shape(closeguys)
 !   deallocate(dmA)
 !endif   ! Mass transfer with immobile particles?
 
+
+print*,'here m1',na,alive
+
     end subroutine mix_particles
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-subroutine abc_react(imp,pat,cat,closeguys,close_dists,Dloc,dt,alive)
+subroutine abc_react(imp,pat,cat,closeguys,close_dists,dt)
 
 !  This subroutine will have reaction stoA A (aq) + stoB B (aq) <--> stoC C (solid) for debugging
 !  The forward rxn has hard-coded rate kf, backwards kr
@@ -316,13 +329,13 @@ subroutine abc_react(imp,pat,cat,closeguys,close_dists,Dloc,dt,alive)
        type(dist_array), intent(in)   :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
 
-       double precision, intent(in)   :: Dloc(:), dt 
-       integer, intent(in)            :: alive(:)
-       double precision, allocatable  :: dmA(:), dmB(:), dmC(:), ds(:), pmass(:), v_s(:) 
+       double precision, intent(in)   :: dt 
+!       integer, intent(in)            :: 
+       double precision, allocatable  :: dmA(:), dmB(:), dmC(:),ds(:),pmass(:),v_s(:),Dloc(:) 
        double precision               :: dm, dmAtemp, dmBtemp,kr,kf,stoA,stoB,stoC,totwgt,&
                                          denom1,x,y,z,weight
        integer                        :: iloop,jloop,numjs,ntot,aindex,bindex,i,j,k,na,ni
-       integer, allocatable           :: indys(:)
+       integer, allocatable           :: indys(:), alive(:), indices(:)
        double precision               :: conc(nspec),iconc(inspec),curtime
     
 
@@ -332,18 +345,28 @@ stoB=1.d0
 stoC=1.d0
 kf=.001
 kr=0.0001
-allocate(pmass(inspec))
 
-!  ds=pat%ds
-na = count(pat%active)
-ni= count(imp%active)
-ntot=na+ni
-allocate (v_s(ntot),dmA(ni),dmB(ni))  ! Maximum possible size
-allocate (indys(ntot))  ! Maximum possible size
+     na = count(pat%active)
+     ni = count(imp%active)
+     ntot = na+ni
+
+     allocate(indices(maxnp),alive(na))
+     indices = (/(iloop, iloop = 1, maxnp)/) ! this is for easy array-indexing of pat
+     alive = pack(indices, pat%active)
+
+     allocate(ds(ntot))
+     allocate(Dloc(na))
+     allocate(pmass(inspec))
+
+     ds(1:na)=pat(alive)%ds
+     Dloc(1:na)=pat(alive)%dmix
+     
+     allocate (v_s(ntot),dmA(ni),dmB(ni))  ! Maximum possible size
+     allocate (indys(ntot))  ! Maximum possible size
 v_s=0.d0
 pmass=0.d0 
 
-print*,'here r1'
+print*,'here r1',na,alive
 
 do iloop=1,na   !  These are the mobiles
      aindex=alive(iloop)    !  This is the actual pat number (there are only na alive)

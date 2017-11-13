@@ -1,4 +1,4 @@
 0.      1     /time to next pnt release (tnextpnt), no of pnt sources, number of particles
-0 0.5 0.025 0.025 0.025 0.025 1000 1 2 0.1 0.0  /xmin, xmax, ymin, ymax, zmin, zmax, nppnt, mobile (0) or immobile (1), # species, pmass(# species),
+0 0.5 0.025 0.025 0.025 0.025 1000 1 0.0005 2 0.1 0.0    /xmin, xmax, ymin, ymax, zmin, zmax, nppnt, ds, mobile (0) or immobile (1), # species, pmass(# species)
 
  

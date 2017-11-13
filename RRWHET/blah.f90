@@ -79,9 +79,10 @@ module global
     integer*2:: ijk(4),itype,nzone,zone(100)    ! cell location and type (1 = x,y,z, 0 = i,j,k) of sample location
   end type sample            
   type particle
-    real:: xyz(3),birth_day,death_day !,birth_place(3)  ! location,birth time
+    real:: xyz(3),birth_day,death_day       !,birth_place(3)  ! location,birth time
     double precision:: pmass(nspec)         ! mass of each species
-    double precision:: ds		    ! effective volume of the particle
+    double precision:: ds		         ! effective volume of the particle
+    double precision:: dmix                 ! portion of symm. D given to mixing/rxn
     integer*2:: ijk(3)                      ! cell location
     integer:: pnumber                       ! cell location
     logical*2:: active                      ! active particle?
@@ -1912,7 +1913,8 @@ do; if(.not.(curtime.lt.tmax))exit
 ! Split the components of the disp/diff tensor between mixing, reaction, and random walks via 
 ! the diagonal component using 0<= dtranfrac and difffrac <=1
 
-    call D_partition (pat,cat,dtran,ddiff,Dloc,alive)
+    call D_partition (pat,cat,dtran,ddiff)
+
 print*,' '
 print*,'here 1',count(pat%active),count(imp%active)
 
@@ -1938,11 +1940,13 @@ print*,'here 1',count(pat%active),count(imp%active)
 !  Right now, anticipating mpi and/or openmp calls, we will pass minimal amounts of info
 !  Hence, only transferring vectors with particle indices, locations, and distances.
 
-    if(dt.gt.0.0)call mix_particles(imp,pat,cat,dt,closeguys,close_dists,Dloc,alive)
+    call D_partition (pat,cat,dtran,ddiff)
+
+    if(dt.gt.0.0)call mix_particles(imp,pat,cat,closeguys,close_dists,dt)
 
 print*,dt,'here 5'
 
-    if(dt.gt.0.0)call abc_react(imp,pat,cat,closeguys,close_dists,Dloc,dt,alive)
+    if(dt.gt.0.0)    call abc_react(imp,pat,cat,closeguys,close_dists,dt)
 
 print*,'here 6'
    deallocate(alive,Dloc)
@@ -2427,7 +2431,7 @@ type (recharge):: rech(nx,ny)
 !integer:: maxnp,np,npart,iptype
 integer:: k,kx,ky,kz,ip,npart,iptype
 real:: x,y,z,xm,ym,zm,sx,sy,sz,time,randu01
-double precision:: pmass(nspec)
+double precision:: pmass(nspec),ds
 do ip=1,npart
   if(np+1.gt.maxnp)then
     write(iout,*)' error:too many particles, increase maxnp'
@@ -2446,7 +2450,9 @@ do ip=1,npart
   else
     z=float(k-1)*dz+smallxyz(3)
   endif
-  call addp(time,x,y,z,kx+1,ky+1,k,pmass,pat,cat)
+! DAB need to figure out ds for sure!!!! For now = sx*sy*dz/npart
+ ds=sx*sy*dz/npart
+  call addp(time,x,y,z,kx+1,ky+1,k,pmass,pat,cat,ds)
 enddo
 return
 end
@@ -2463,7 +2469,7 @@ type (cell)::     cat(nx,ny,nz)
 type (recharge):: rech(nx,ny)
 integer:: i,j,k,ip,npart,iptype
 real:: x,y,z,xm,ym,sx,sy,time,randu01
-double precision:: pmass(nspec)
+double precision:: pmass(nspec),ds
 do ip=1,npart
     if(np+1.gt.maxnp)then
       write(iout,*)' error:too many particles, increase maxnp'
@@ -2478,7 +2484,9 @@ do ip=1,npart
     else
       z=float(k-1)*dz+smallxyz(3)
     endif
-    call addp(time,x,y,z,i,j,k,pmass,pat,cat)
+! DAB need to figure out ds for sure!!!! For now = sx*sy*dz/npart
+ ds=dble(dx*dy*dz)/dble(npart)
+    call addp(time,x,y,z,i,j,k,pmass,pat,cat,ds)
 enddo
 return
 end
@@ -3389,7 +3397,7 @@ integer:: ip,itype,ibounds,ip_res
 integer:: isplit,nsplit,iptype,i,j,k
 real:: por(nzone),ret(nzone),x,y,z
 real:: time
-double precision:: pmass_old(nspec),pmass(nspec),pmass_min(nspec),cmass(nspec),conc(nspec)
+double precision:: pmass_old(nspec),pmass(nspec),pmass_min(nspec),cmass(nspec),conc(nspec),ds
 !
 if(nres.le.1)return
 do ip=1,np
@@ -3418,8 +3426,9 @@ do ip=1,np
           cat(i,j,k)%cmass=cat(i,j,k)%cmass-pmass_old+pmass
           pat(ip)%pmass=pmass
           time=pat(ip)%birth_day
+          ds=pat(ip)%ds/dble(nsplit)
           do isplit=1,nsplit-1
-            call addp(time,x,y,z,i,j,k,pmass,pat,cat)
+            call addp(time,x,y,z,i,j,k,pmass,pat,cat,ds)
 !...........assign birth date for split particle to that of parent                    
             pat(np)%birth_day=pat(ip)%birth_day
           enddo
@@ -4363,14 +4372,14 @@ integer:: ptype,nowspec
 real:: x,y,z,xm,ym,zm,xp,yp,zp,xmax,ymax,zmax,xmin,ymin,zmin
 real:: vel3(3,0:nx,0:ny,0:nz)
 double precision, allocatable:: pmass(:)
-double precision::pmassread(100)
+double precision::pmassread(100),ds
 pmassread=0.d0
 !
 do ipntsrc=1,npntsrc
 
   call skip(inpnt)
   read(inpnt,*,err=9999)xmin,xmax,ymin,ymax,zmin,zmax,nppnt,ptype,&
-                        nowspec,(pmassread(iloop),iloop=1,nowspec)  
+                        ds,nowspec,(pmassread(iloop),iloop=1,nowspec)  
 
 !.check if particle is in domain
   if(xmin.lt.0.0.or.xmax.gt.nx*dx.or.& 
@@ -4425,8 +4434,8 @@ do ipntsrc=1,npntsrc
         write(iout,*)' error: maximum # of particles exceeded in pntupdt'
         stop ' error: maximum # of particles exceeded in pntupdt'
       endif
-      if(ptype.eq.1)call addimp(sngl(curtime),x,y,z,i,j,k,pmass,imp,cat)
-      if(ptype.eq.0)call   addp(sngl(curtime),x,y,z,i,j,k,pmass,pat,cat)
+      if(ptype.eq.1)call addimp(sngl(curtime),x,y,z,i,j,k,pmass,imp,cat,ds)
+      if(ptype.eq.0)call   addp(sngl(curtime),x,y,z,i,j,k,pmass,pat,cat,ds)
  enddo
 enddo
 print*,'number of pats',count(pat%active)
@@ -4541,7 +4550,7 @@ subroutine placeu(time,xm,ym,zm,sx,sy,sz,pat,cat,npart,pmass,iptype,ierr)
 use global
 type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
-double precision pmass(nspec)
+double precision pmass(nspec),ds
 ierr=0
 do ip=1,npart
     if(np+1.gt.maxnp)then
@@ -4554,7 +4563,9 @@ do ip=1,npart
       ierr=-1
       return
     endif
-    call addp(time,x,y,z,kx+1,ky+1,kz+1,pmass,pat,cat)
+! DAB  Need to figure out ds here!!!!!!!!!!!!  For now make it sx*sy*sz/npart
+ds = dble(sx*sy*sz)/dble(npart)
+    call addp(time,x,y,z,kx+1,ky+1,kz+1,pmass,pat,cat,ds)
 enddo
 return
 end
@@ -4570,7 +4581,7 @@ type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 real:: vel3(3,0:nx,0:ny,0:nz),sx,sy,sz,xm,ym,zm,qtotal,q,r,randu01,sznew,zmnew,x,y,z,time
 real, allocatable:: probw(:)
-double precision pmass(nspec)
+double precision pmass(nspec),ds
 integer:: iw,nw,kxm,im,kym,jm,kzm,km,i,j,k,kxp,kyp,kzp,ip,kp,kx,ky,kz,npart,iptype
 kxm=ifix(xm/dx); kym=ifix(ym/dy); kzm=ifix(zm/dz)
 im=kxm+1; jm=kym+1; km=kzm+1
@@ -4612,7 +4623,10 @@ do ip=1,npart
     endif
     x=xm+sx*randu01(); y=ym+sy*randu01(); z=zmnew+sznew*randu01()
     kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
-    call addp(time,x,y,z,kx+1,ky+1,kz+1,pmass,pat,cat)
+
+! DAB  Need to figure out ds here!!!!!!!!!!!!  For now make it qtotal/npart
+ds = dble(qtotal)/dble(npart)
+    call addp(time,x,y,z,kx+1,ky+1,kz+1,pmass,pat,cat,ds)
 enddo
 return
 end
@@ -5795,7 +5809,7 @@ END
 !------------------------------------------------------------
 ! addp
 !------------------------------------------------------------
-subroutine addp(time,x,y,z,i,j,k,pmass,pat,cat)
+subroutine addp(time,x,y,z,i,j,k,pmass,pat,cat,ds)
 !.....add a particle at location x,y,x,in cell, with masses pmass
 use global
 implicit none
@@ -5804,7 +5818,7 @@ type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 integer:: i,j,k,ptype
 real:: time,x,y,z
-double precision:: pmass(nspec)
+double precision:: pmass(nspec),ds
 !
 
 np=np+1
@@ -5819,6 +5833,7 @@ if(np.le.maxnp)then
   pat(np)%ijk(1)=i; pat(np)%ijk(2)=j; pat(np)%ijk(3)=k
   pat(np)%active=.true.                  
   pat(np)%death_day=0.0  
+  pat(np)%ds=ds
 !
   cat(i,j,k)%np_cell=cat(i,j,k)%np_cell+1       ! number of particles in cell
 !
@@ -5836,7 +5851,7 @@ end
 !------------------------------------------------------------
 ! addimp
 !------------------------------------------------------------
-subroutine addimp(time,x,y,z,i,j,k,pmass,imp,cat)
+subroutine addimp(time,x,y,z,i,j,k,pmass,imp,cat,ds)
 !.....add a particle at location x,y,x,in cell, with masses pmass
 use global
 implicit none
@@ -5844,7 +5859,7 @@ type (imparticle):: imp(maxnp)
 type (cell)::     cat(nx,ny,nz)
 integer:: i,j,k
 real:: time,x,y,z
-double precision:: pmass(inspec)
+double precision:: pmass(inspec),ds
 !
 nimp=nimp+1
 impnumber=impnumber+1
@@ -5861,6 +5876,7 @@ if(nimp.le.maxnp)then
   imp(nimp)%ijk(3)=k
   imp(nimp)%active=.true.                  
   imp(nimp)%death_day=0.0  
+  imp(nimp)%ds=ds
 !
   cat(i,j,k)%nimp_cell=cat(i,j,k)%nimp_cell+1       ! number of particles in cell
 !
