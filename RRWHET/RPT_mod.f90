@@ -134,35 +134,32 @@ module RPT_mod
         ! denom1 and const1 are scalar versions of denom and const
 
         ! calculate total number of particles to be considered for mass balance
-!    indices = (/(iloop, iloop = 1, na)/) ! this is for easy array-indexing of pat
-    na = count(pat%active)
-    ni = count(imp%active)
-!    allocate (alive(na)) ! maybe preallocate to avoid repeatedly doing this
-!    allocate (Dloc(na),
-     allocate(denom(na),const(na),locs(dim,na+ni))
-!    alive = pack(indices, pat%active)
-    ntot = na+ni
-    ds(1:na)=real(pat(alive)%ds, kdkind)
- 
+     na = count(pat%active)
+     ni = count(imp%active)
+     ntot = na+ni
+
+     allocate(locs(dim,na+ni))
+     allocate(const(ntot),denom(ntot),ds(ntot))
+     allocate(closeguys(ntot),close_dists(ntot))
+     
+     ds(1:na)=real(pat(alive)%ds, kdkind)
+
 !     if(im_transfer) then
 !         ntot=na+ni
 !     endif
-
-     allocate(const(ntot),denom(ntot))
-!     Dloc=0.0D0
 
 !  Build locs array--mobile particles will be at the beginning of the
 !  array, and immobile will be at the end
 !  This seems super slow - can I vectorize?
 
+
    do iloop=1,na
-         locs(1:dim,iloop) = real(pat(alive(iloop))%xyz, kdkind)
+        locs(1:dim,iloop) = real(pat(alive(iloop))%xyz, kdkind)
    enddo
 
    do iloop=na+1,ntot
-         locs(1:dim,iloop) = real(imp(iloop)%xyz, kdkind)
+         locs(1:dim,iloop) = real(imp(iloop-na)%xyz, kdkind)
    enddo
-
 
 !
         ! calculate interaction distance to be numsd standard deviations of the
@@ -174,6 +171,8 @@ module RPT_mod
 
         ! build the KD tree and search it
         ! ****NOTE: num_alloc is a global variable that is hard-coded above
+
+print*,shape(closeguys)
 
         call maketree(tree, locs, dim, ntot)
         call search(ntot, dim, tree, r2, ntot, closeguys, close_dists)
@@ -500,8 +499,8 @@ end subroutine abc_react
         type(kdtree2_result), allocatable             :: results(:)
             ! results array from KD tree module
 
-!        allocate (closeguys(n), close_dists(n), results(num_alloc))
-!        allocate (closeguys(n), close_dists(n), results(n))
+!         allocate(results(n))
+         allocate (closeguys(n), close_dists(n), results(n))
 
         ! loop over all particles
         do i = 1, n

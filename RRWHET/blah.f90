@@ -146,7 +146,8 @@ module global
 ! xyzc(3)           - the center of the domain
 ! xyzmax(3)         - the maximum extant of the domain
 ! xyzmin(3)         - the minimum extant of the domain
-! mass              - total mass in the domain 
+! mass(spec)        - total (mobile?) mass in the domain
+! immass(inspec)    - total (immobile?) mass in the domain
 ! netmassp(3)  - mass passing through maximum extents of domain
 ! netmassm(3)  - mass passing through minimum extents of domain 
 ! pnumber      - incremental particle number 
@@ -178,7 +179,7 @@ module global
 
   double precision:: xyzl2(3),xyzmax(3),xyzmin(3),xyzc(3)
   double precision:: mass(nspec),netmass(nspec),netmassp(3,nspec),netmassm(3,nspec)
-  double precision:: massbc(nbtype+1,nspec)
+  double precision:: massbc(nbtype+1,nspec),immass(inspec)
   double precision:: cres
   double precision:: rm 
   double precision:: curtime,tnextopc,tnextbnd,tnextvel
@@ -332,8 +333,10 @@ if(ibug.ge.1)then;string(1)=' ALLOCATING MEMORY FOR CHD ARRAY!';call debug(ibugo
 allocate (chd(nx,ny,nz), STAT = ierror)
 if(ierror.ne.0)goto 9994
 !
-if(ibug.ge.1)then;string(1)=' ALLOCATING MEMORY FOR PAT ARRAY!';call debug(ibugout,string,nline);endif
-allocate (pat(maxnp), STAT = ierror)
+if(ibug.ge.1)then
+   string(1)=' ALLOCATING MEMORY FOR PAT ADN IMP ARRAYS!'
+   call debug(ibugout,string,nline);endif
+   allocate (pat(maxnp),imp(maxnp), STAT = ierror)
 if(ierror.ne.0)goto 9994
 !
 if(ibug.ge.1)then;string(1)=' ALLOCATING MEMORY FOR CAT ARRAY!';call debug(ibugout,string,nline);endif
@@ -354,7 +357,7 @@ cat(:,:,:)%bc_number=0
 cat(:,:,:)%zone=0
 !
 vel3(:,:,:,:)=0.0
-np=0
+np=0;nimp=0;impnumber=0
 !.model extents
 dx2=dx/2.0; dy2=dy/2.0; dz2=dz/2.0
 !
@@ -379,7 +382,7 @@ write(*,1000)near,smallxyz
 ! DAB check these for species expansion:
 netmassp=0.0; netmassm=0.0
 netxyzm=0; netxyzp=0
-mass=0
+mass=0.
 netsplit=0
 !.....cell face areas
 ax=dy*dz; ay=dx*dz; az=dx*dy
@@ -1908,12 +1911,16 @@ do; if(.not.(curtime.lt.tmax))exit
 !.move all existing particles up to curtime
 ! Split the components of the disp/diff tensor between mixing, reaction, and random walks via 
 ! the diagonal component using 0<= dtranfrac and difffrac <=1
-    
+
     call D_partition (pat,cat,dtran,ddiff,Dloc,alive)
+print*,' '
+print*,'here 1',count(pat%active),count(imp%active)
 
   if(ibug.ge.1)then;string(1)=' CALL MOVEP!';call debug(ibugout,string,nline);endif
+
   call movep(1,np,sngldt,vel3,por,ret,dlong,(1-dtranfrac)*dtran,&
              (1-difffrac)*ddiff,decay,pat,cat,bounds)  ! full anisotropic displacement
+
 !.distribute and move particles from continuous source boundary sources
   if(ibug.ge.1)then;string(1)=' CALL SRC!';call debug(ibugout,string,nline);endif
   call src(movep,cat,pat,rech,chd,vel3,por,ret,dlong,real(1.0-dtranfrac)*dtran,&
@@ -1930,11 +1937,14 @@ do; if(.not.(curtime.lt.tmax))exit
 ! DAB put in mixing subroutine call here
 !  Right now, anticipating mpi and/or openmp calls, we will pass minimal amounts of info
 !  Hence, only transferring vectors with particle indices, locations, and distances.
-  
 
     call mix_particles(imp,pat,cat,dt,closeguys,close_dists,Dloc,alive)
 
+print*,'here 5'
+
     call abc_react(imp,pat,cat,closeguys,close_dists,Dloc,dt,alive)
+
+print*,'here 6'
 
 !.update velocities
   tnextvelo=tnextvel
@@ -4349,48 +4359,65 @@ type (cell)::     cat(nx,ny,nz)
 !.....read point source information
 integer:: ipntsrc,indomain,iread_error,kx,ky,kz,i,j,k
 integer:: inppnt,nppnt,iptype
-integer:: ptype
+integer:: ptype,nowspec
 real:: x,y,z,xm,ym,zm,xp,yp,zp,xmax,ymax,zmax,xmin,ymin,zmin
 real:: vel3(3,0:nx,0:ny,0:nz)
-double precision:: pmass(nspec)
+double precision, allocatable:: pmass(:)
+double precision::pmassread(100)
+pmassread=0.d0
 !
 do ipntsrc=1,npntsrc
 
   call skip(inpnt)
-  read(inpnt,*,err=9999)xmin,xmax,ymin,ymax,zmin,zmax,nppnt,pmass,ptype  
+  read(inpnt,*,err=9999)xmin,xmax,ymin,ymax,zmin,zmax,nppnt,ptype,&
+                        nowspec,(pmassread(iloop),iloop=1,nowspec)  
 
 !.check if particle is in domain
-  if(x.lt.0.0.or.xmax.gt.nx*dx.or.& 
-     y.lt.0.0.or.ymax.gt.ny*dy.or.&
-     z.lt.0.0.or.zmax.gt.nz*dz)goto 9998
+  if(xmin.lt.0.0.or.xmax.gt.nx*dx.or.& 
+     ymin.lt.0.0.or.ymax.gt.ny*dy.or.&
+     zmin.lt.0.0.or.zmax.gt.nz*dz)goto 9998
 
-     if(ptype.eq.0) mass=mass+nppnt*pmass  ! DAB count mobile mass
+     if(ptype.eq.0) then
+         allocate(pmass(nspec))
+         pmass=pmassread(1:nspec)
+         mass=mass+nppnt*pmass  ! DAB count mobile mass
+         do iloop=1,nspec     !  DAB do I need to change this for immobiles???
+            massbc(nbtype+1,iloop)=massbc(nbtype+1,iloop)+nppnt*pmass(iloop)
+         enddo
+
+     else 
+         allocate(pmass(inspec))
+         pmass=pmassread(1:inspec)
+         immass=immass+nppnt*pmass
+!         do iloop=1,nspec     !  DAB do I need to change this for immobiles???
+!            massbc(nbtype+1,iloop)=massbc(nbtype+1,iloop)+nppnt*pmass(iloop)
+!         enddo
+
+     endif
 
      npbc(nbtype+1)=npbc(nbtype+1)+nppnt
-     do iloop=1,nspec
-        massbc(nbtype+1,iloop)=massbc(nbtype+1,iloop)+nppnt*pmass(iloop)
-     enddo
 
 ! DAB Do this point by point to add random positions between x and xmax, etc.
    do inppnt=1,nppnt
-   x=xmin+rand()*(xmax-xmin)
-   y=ymin+rand()*(ymax-ymin)
-   z=zmin+rand()*(zmax-zmin)
+
+     x=xmin+rand()*(xmax-xmin)
+     y=ymin+rand()*(ymax-ymin)
+     z=zmin+rand()*(zmax-zmin)
 
 !.compute cell from x,y,z
-  kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
-  i=kx+1; j=ky+1; k=kz+1
-  xm=kx*dx; ym=ky*dy; zm=kz*dz; xp=xm+dx; yp=ym+dy; zp=zm+dz
-  call icell_correct(kx,ky,kz,i,j,k,x,y,z,xm,ym,zm,xp,yp,zp,vel3)
-  if(i.lt.1.or.j.lt.1.or.k.lt.1.or.i.gt.nx.or.j.gt.ny.or.k.gt.nz)then
-    print*,' PARTICLE OUTSIDE OF DOMAIN'
-    write(iout,*)' PARTICLE OUTSIDE OF DOMAIN'
-    print*,' xmin,ymin,zmin',0.0,0.0,0.0
-    print*,' xmax,ymax,zmax',dx*nx,dy*ny,dz*nz
-    print*,'    x,   y,   z',x,y,z
-    write(iout,*)' PARTICLE OUTSIDE OF DOMAIN'
-    cycle
-  endif
+     kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
+     i=kx+1; j=ky+1; k=kz+1
+     xm=kx*dx; ym=ky*dy; zm=kz*dz; xp=xm+dx; yp=ym+dy; zp=zm+dz
+     call icell_correct(kx,ky,kz,i,j,k,x,y,z,xm,ym,zm,xp,yp,zp,vel3)
+     if(i.lt.1.or.j.lt.1.or.k.lt.1.or.i.gt.nx.or.j.gt.ny.or.k.gt.nz)then
+       print*,' PARTICLE OUTSIDE OF DOMAIN'
+       write(iout,*)' PARTICLE OUTSIDE OF DOMAIN'
+       print*,' xmin,ymin,zmin',0.0,0.0,0.0
+       print*,' xmax,ymax,zmax',dx*nx,dy*ny,dz*nz
+       print*,'    x,   y,   z',x,y,z
+       write(iout,*)' PARTICLE OUTSIDE OF DOMAIN'
+       cycle
+     endif
 !
 !  massbc(nbtype+1)=massbc(nbtype+1)+nppnt*pmass
 ! DAB moved up this loop start ... do inppnt=1,nppnt
@@ -4400,8 +4427,11 @@ do ipntsrc=1,npntsrc
       endif
       if(ptype.eq.1)call addimp(sngl(curtime),x,y,z,i,j,k,pmass,imp,cat)
       if(ptype.eq.0)call   addp(sngl(curtime),x,y,z,i,j,k,pmass,pat,cat)
-  enddo
+ enddo
 enddo
+print*,'number of pats',count(pat%active)
+print*,'number of imps',count(imp%active)
+deallocate(pmass)
 call skip(inpnt)
 read(inpnt,*,iostat=iread_error)tnextpnt,npntsrc
 if(iread_error.eq.0)then
@@ -4656,7 +4686,9 @@ if(idecay.eq.1)then
   enddo
 endif
 write(iout,1000)sngl(curtime),(npbc(ibtype),ibtype=1,nbtype+1),&
-(netxyzm(idir),netxyzp(idir),idir=1,3),netsplit,nptotal,np  
+(netxyzm(idir),netxyzp(idir),idir=1,3),netsplit,nptotal,np 
+ 
+print*,opcnow
 
 do iloop=1,nspec
   write(iout,1002)iloop,(sngl(massbc(ibtype,iloop)),ibtype=1,nbtype+1),&
@@ -4730,6 +4762,7 @@ if(nran.ne.0)write(iout,1005)sngl(rm)/float(nran)
        '         particle attributes     ',20('.'),3x,i15/&
        '         internal counters       ',20('.'),3x,i15//&
        '         monitoring              ',20('.'),3x,i15//&
+       '         solid concentrations    ',20('.'),3x,i15//&
 
        ' time of next velocity update    ',20('.'),3x,e15.8/&
        ' time of next boundary update    ',20('.'),3x,e15.8/&
@@ -5791,7 +5824,7 @@ if(np.le.maxnp)then
 !
   cat(i,j,k)%cmass=cat(i,j,k)%cmass+pmass   ! mass in cell
 ! log the bithplace in outp and tag with a NEGATIVE ip
-  write(ioutp)-pat(np)%pnumber  
+  write(ioutp)pat(np)%pnumber  
   write(ioutp)x,y,z  
 else
   write(iout,*)' maxnp exceded'
@@ -5807,24 +5840,25 @@ subroutine addimp(time,x,y,z,i,j,k,pmass,imp,cat)
 !.....add a particle at location x,y,x,in cell, with masses pmass
 use global
 implicit none
-!type (particle):: pat(maxnp)
 type (imparticle):: imp(maxnp)
 type (cell)::     cat(nx,ny,nz)
-integer:: i,j,k,ptype
+integer:: i,j,k
 real:: time,x,y,z
 double precision:: pmass(inspec)
 !
-
 nimp=nimp+1
 impnumber=impnumber+1
 if(nimp.le.maxnp)then
 !.initialize new IMMOBILE particle
-  imp(nimp)%xyz(1)=x; imp(np)%xyz(2)=y; imp(np)%xyz(3)=z
-!  pat(nimp)%birth_place(1)=x; pat(np)%birth_place(2)=y; pat(np)%birth_place(3)=z
+  imp(nimp)%xyz(1)=x
+  imp(nimp)%xyz(2)=y
+  imp(nimp)%xyz(3)=z
   imp(nimp)%birth_day=time
   imp(nimp)%pmass=pmass
   imp(nimp)%pnumber=impnumber
-  imp(nimp)%ijk(1)=i; imp(np)%ijk(2)=j; imp(np)%ijk(3)=k
+  imp(nimp)%ijk(1)=i
+  imp(nimp)%ijk(2)=j 
+  imp(nimp)%ijk(3)=k
   imp(nimp)%active=.true.                  
   imp(nimp)%death_day=0.0  
 !
@@ -5832,7 +5866,7 @@ if(nimp.le.maxnp)then
 !
   cat(i,j,k)%cimmass=cat(i,j,k)%cimmass+pmass   ! mass in cell
 ! log the bithplace in outp and tag with a NEGATIVE ip
-  write(ioutp)-imp(np)%pnumber  
+  write(ioutp)imp(nimp)%pnumber  
   write(ioutp)x,y,z  
 else
   write(iout,*)' maxnp exceded'

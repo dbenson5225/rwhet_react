@@ -3,7 +3,7 @@ calcite/dolomite dissolution/precipitation
 1                         /debug level
 dolomite.dbg
 1000 1 1                  /nx, ny, nz
-0.0005 1 1                /dx, dy, dz
+0.0005 0.05 0.05                /dx, dy, dz
 1 1000                     /ixmin,ixmax
 1 1                     /iymin,iymax
 1 1                      /izmin,izmax
@@ -21,3 +21,4 @@ dolomite.vlc
 dolomite.bnd
 dolomite.pnt
 dolomite.sam
+dolomite.rxn
