@@ -83,7 +83,7 @@ module RPT_mod
           i=pat(aindex)%ijk(1); j=pat(aindex)%ijk(2); k=pat(aindex)%ijk(3) 
           Dloc(iloop)=dble(difffrac*ddiff(cat(i,j,k)%zone)+dtranfrac*dtran(cat(i,j,k)%zone))
     enddo
-
+deallocate (indices)
 
 
     end subroutine D_partition
@@ -168,6 +168,7 @@ module RPT_mod
 
         r2 = (real(numsd, kdkind) * sqrt(2.0_kdkind * maxval(real(Dloc, kdkind)) *&
                                          real(dt, kdkind)))**2
+print*,numsd,maxval(Dloc),dt,r2
 
         ! build the KD tree and search it
         ! ****NOTE: num_alloc is a global variable that is hard-coded above
@@ -341,6 +342,9 @@ allocate (v_s(ntot),dmA(ni),dmB(ni))  ! Maximum possible size
 allocate (indys(ntot))  ! Maximum possible size
 v_s=0.d0
 pmass=0.d0 
+
+print*,'here r1'
+
 do iloop=1,na   !  These are the mobiles
      aindex=alive(iloop)    !  This is the actual pat number (there are only na alive)
      conc=(pat(aindex)%pmass)/pat(aindex)%ds   
@@ -359,6 +363,8 @@ do iloop=1,na   !  These are the mobiles
 !  The index in the imp array is the indy - na
 
      numjs=size(closeguys(iloop)%indices>na)
+
+print*,'here r2'
      
      if(numjs.lt.1) then
 ! make an imp here
@@ -464,8 +470,7 @@ do iloop=1,ni
 
 enddo   !  loop through the immobile for dissolution
 
-!deallocate (closeguys, close_dists,pmass,v_s)
-
+deallocate (pmass,v_s,dmA,dmB,dmC,indys)
 end subroutine abc_react
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -514,68 +519,13 @@ end subroutine abc_react
 
             closeguys(i)%indices = results(1 : nf)%idx
             close_dists(i)%dists = results(1 : nf)%dis
+!print*,i,nf,r2,closeguys(i)%indices
         end do
 
         deallocate (results)
     end subroutine search
 
-    ! subroutine bin_concs(p, np, alive, row, col, c)
-    !     type(mparticle),   intent(inout) :: p(:)
-    !     integer,          intent(in   ) :: np, alive(:), row, col
-    !     ! double precision, intent(in   ) :: dx
-    !     double precision, intent(  out) :: c(row, col)
-    !     integer                         :: i
-
-    !     c = 0.0d0
-
-    !     ! print *, 'np = ', np, size(alive)
-    !     ! pause
-
-    !     do i = 1, np
-    !         ! p(alive(i))%bin = floor(p(alive(i))%loc/dx) + 1
-    !         ! print *, 'i = ', i
-    !         ! print *, 'p(alive(i))%bin = ', p(alive(i))%bin
-    !         if (p(alive(i))%bin < 1 .or. p(alive(i))%bin > 500) then
-    !             print *, 'i = ', i
-    !             print *, 'p(alive(i))%bin = ', p(alive(i))%bin
-    !             print *, 'p(alive(i))%loc = ', p(alive(i))%loc
-    !         endif
-    !         c(p(alive(i))%bin, :) = c(p(alive(i))%bin, :) +&
-    !                                 p(alive(i))%concs * (dble(np) / dble(row))
-    !         ! adjust from particle to cell concs (note that row = ncellsol)
-    !         ! **** also, dividing here by total alive particles, not sure if
-    !         ! this is smart, given the higher conc near inflow boundary
-    !     enddo
-    ! end subroutine bin_concs
-
-    ! subroutine unbin_concs(p, np, alive, row, col, c)
-    !     type(mparticle),   intent(inout) :: p(:)
-    !     integer,          intent(in   ) :: np, alive(:), row, col
-    !     double precision, intent(in   ) :: c(row, col)
-    !     double precision                :: temp(col)
-    !     integer                         :: i, j, npart
-    !     integer                         :: idx(np) ! made this overly large to avoid repeated allocation/deallocation
-    !     logical                         :: inbin(np)
-
-    !     do i = 1, row
-    !         if (p(alive(i))%bin < 1 .or. p(alive(i))%bin > 500) then
-    !             print *, 'i = ', i
-    !             print *, 'p(alive(i))%bin = ', p(alive(i))%bin
-    !             print *, 'p(alive(i))%loc = ', p(alive(i))%loc
-    !         endif
-    !         inbin = p(alive)%bin == i
-    !         npart = count(inbin)
-    !             ! ****distributing evenly--not sure if this is a good idea or not
-    !         temp = c(i, :)/dble(npart)
-    !         temp = temp * (dble(row) / dble(np))
-    !             ! adjust from cell to particle concs (note that row = ncellsol)
-    !         idx(1 : npart) = pack(alive, inbin)
-    !         do j = 1, npart
-    !             p(idx(j))%concs = temp
-    !         enddo
-    !     enddo
-    ! end subroutine unbin_concs
-
+ 
     ! these next two subroutines use the Box-Muller transform to generate N(0,1)
     ! random numbers from U(0,1)
     ! https://goo.gl/DQgmMu

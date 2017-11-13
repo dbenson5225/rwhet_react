@@ -1938,14 +1938,14 @@ print*,'here 1',count(pat%active),count(imp%active)
 !  Right now, anticipating mpi and/or openmp calls, we will pass minimal amounts of info
 !  Hence, only transferring vectors with particle indices, locations, and distances.
 
-    call mix_particles(imp,pat,cat,dt,closeguys,close_dists,Dloc,alive)
+    if(dt.gt.0.0)call mix_particles(imp,pat,cat,dt,closeguys,close_dists,Dloc,alive)
 
-print*,'here 5'
+print*,dt,'here 5'
 
-    call abc_react(imp,pat,cat,closeguys,close_dists,Dloc,dt,alive)
+    if(dt.gt.0.0)call abc_react(imp,pat,cat,closeguys,close_dists,Dloc,dt,alive)
 
 print*,'here 6'
-
+   deallocate(alive,Dloc)
 !.update velocities
   tnextvelo=tnextvel
   imawupdt=0
