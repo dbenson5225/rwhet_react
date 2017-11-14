@@ -1936,9 +1936,8 @@ print*,'here 1',count(pat%active),count(imp%active)
 !.split particles for resolution of concentration field
   if(ibug.ge.1)then;string(1)=' CALL SPLIT!';call debug(ibugout,string,nline);endif
   if(np.ne.0)call split(pat,cat,bounds,por,ret)
+
 ! DAB put in mixing subroutine call here
-!  Right now, anticipating mpi and/or openmp calls, we will pass minimal amounts of info
-!  Hence, only transferring vectors with particle indices, locations, and distances.
 
     call D_partition (pat,cat,dtran,ddiff)
 
@@ -1948,8 +1947,9 @@ print*,dt,'here 5'
 
     if(dt.gt.0.0)    call abc_react(imp,pat,cat,closeguys,close_dists,dt)
 
+!    deallocate(closeguys,close_dists)
 print*,'here 6'
-   deallocate(alive,Dloc)
+
 !.update velocities
   tnextvelo=tnextvel
   imawupdt=0

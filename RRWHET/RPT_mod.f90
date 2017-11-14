@@ -115,7 +115,6 @@ deallocate (indices,alive)
             ! total number of particles (active mobile + immobile), number
             ! of spatial dimensions, index of 'B' particle for mass balance loop,
             ! and a couple of loop iterators
-            !****Note: hard coded one spatial dimension
         real(kdkind)                   :: r2
         real(kdkind),allocatable       :: locs(:,:)        ! locs(d,n)
             ! array holding locations of immobile and active immobile particles
@@ -142,6 +141,7 @@ deallocate (indices,alive)
      allocate(indices(maxnp),alive(na))
      indices = (/(iloop, iloop = 1, maxnp)/) ! this is for easy array-indexing of pat
      alive = pack(indices, pat%active)
+!print*,pat%active
 
      allocate(locs(dim,na+ni))
      allocate(const(ntot),denom(ntot),ds(ntot))
@@ -174,12 +174,9 @@ deallocate (indices,alive)
 
         r2 = (real(numsd, kdkind) * sqrt(2.0_kdkind * maxval(real(Dloc, kdkind)) *&
                                          real(dt, kdkind)))**2
-print*,numsd,maxval(Dloc),dt,r2
 
         ! build the KD tree and search it
         ! ****NOTE: num_alloc is a global variable that is hard-coded above
-
-print*,shape(closeguys)
 
         call maketree(tree, locs, dim, ntot)
         call search(ntot, dim, tree, r2, ntot, closeguys, close_dists)
@@ -324,14 +321,14 @@ subroutine abc_react(imp,pat,cat,closeguys,close_dists,dt)
        type(particle),  intent(inout) :: pat(:) ! immobile particle array
        type(imparticle),intent(inout) :: imp(:) ! mobile particle array
        type(cell),      intent(inout) :: cat(nx,ny,nz)   ! cell info (incl. diff)
-       type(index_array), intent(in)  :: closeguys(:)
+       type(index_array), intent(inout)  :: closeguys(:)
             ! this holds the indices of nearby particles
-       type(dist_array), intent(in)   :: close_dists(:)
+       type(dist_array), intent(inout)   :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
 
        double precision, intent(in)   :: dt 
 !       integer, intent(in)            :: 
-       double precision, allocatable  :: dmA(:), dmB(:), dmC(:),ds(:),pmass(:),v_s(:),Dloc(:) 
+       double precision, allocatable  :: dmA(:), dmB(:),ds(:),pmass(:),v_s(:),Dloc(:) 
        double precision               :: dm, dmAtemp, dmBtemp,kr,kf,stoA,stoB,stoC,totwgt,&
                                          denom1,x,y,z,weight
        integer                        :: iloop,jloop,numjs,ntot,aindex,bindex,i,j,k,na,ni
@@ -371,6 +368,8 @@ print*,'here r1',na,alive
 do iloop=1,na   !  These are the mobiles
      aindex=alive(iloop)    !  This is the actual pat number (there are only na alive)
      conc=(pat(aindex)%pmass)/pat(aindex)%ds   
+
+print*,'here r2',aindex,conc
      dm = kf*dt*(conc(1)/ds(iloop))**stoA*(conc(2)/ds(iloop))**stoB
 
      dmAtemp=min(stoA*dm,pat(aindex)%pmass(1))
@@ -385,19 +384,21 @@ do iloop=1,na   !  These are the mobiles
 !  indys holds the indexes for all particles (1:na then na+1:not)
 !  The index in the imp array is the indy - na
 
-     numjs=size(closeguys(iloop)%indices>na)
-
-print*,'here r2'
-     
+     numjs=count(closeguys(iloop)%indices>na)
      if(numjs.lt.1) then
+!print*,iloop
 ! make an imp here
          i=pat(aindex)%ijk(1); j=pat(aindex)%ijk(2); k=pat(aindex)%ijk(3) 
          x=pat(aindex)%xyz(1); y=pat(aindex)%xyz(2); z=pat(aindex)%xyz(1)
-         call addimp(real(curtime),x,y,z,i,j,k,pmass,imp,cat) 
+! DAB  Not sure how big ds should be here...
+         call addimp(real(curtime),x,y,z,i,j,k,pmass,imp,cat,dx*dy*dz/(nimp+1)) 
      else
 ! Place solids on nearby imp particles weighted by prob. of collision
         indys(1:numjs)=pack(closeguys(iloop)%indices,closeguys(iloop)%indices>na)     
         v_s=0.d0
+print*,'here r4',numjs,indys(1:numjs)
+
+print*,'here 4',closeguys(iloop)%indices,indys(1:numjs)
 
         do jloop = 1, numjs
 
@@ -446,13 +447,13 @@ do iloop=1,ni    !  This will stay parallel
 
 enddo
 
-do iloop=1,ni
+do iloop=1,ni     !  Immobile particles loop
 
 ! find close mobile particles to give newly dissolved mass to
 !  Remember that the immobile particles sit after ni mobiles in the closeguys array
 
-    numjs=size(closeguys(ni+iloop)%indices<=na)
-    indys(1:numjs)=pack(closeguys(ni+iloop)%indices,closeguys(ni+iloop)%indices<=na)     
+    numjs=count(closeguys(na+iloop)%indices<=na)
+    indys(1:numjs)=pack(closeguys(na+iloop)%indices,closeguys(na+iloop)%indices<=na)     
 !  make the pmass vector that must be placed into mobiles    
     pmass(1)=dmA(iloop); pmass(2)=dmB(iloop)    ! etc. etc. if needed
 
@@ -460,7 +461,8 @@ do iloop=1,ni
 ! make a new pat here
          i=imp(iloop)%ijk(1); j=imp(iloop)%ijk(2); k=imp(iloop)%ijk(3) 
          x=imp(iloop)%xyz(1); y=imp(iloop)%xyz(2); z=imp(iloop)%xyz(1)
-         call addp(real(curtime),x,y,z,i,j,k,pmass,pat,cat) 
+! DAB  Not sure how big to make ds ...
+         call addp(real(curtime),x,y,z,i,j,k,pmass,pat,cat,dx*dy*dz/(np+1)) 
  
     else
 ! Place dissolved solids on nearby pat particles weighted by prob. of collision
@@ -474,14 +476,14 @@ do iloop=1,ni
                 ! NOTE: distance is not squared since the search already
                 ! returned the squared value
 
-                v_s(jloop) = exp(close_dists(ni+iloop)%dists(indys(jloop))/denom1)
+                v_s(jloop) = exp(close_dists(na+iloop)%dists(indys(jloop))/denom1)
 
         enddo
         totwgt=sum(v_s(1:numjs))
 
         do jloop=1, numjs 
                 weight=v_s(jloop)/totwgt
-                bindex = closeguys(ni+iloop)%indices(indys(jloop)) 
+                bindex = closeguys(na+iloop)%indices(indys(jloop)) 
                 pat(bindex)%pmass=pat(bindex)%pmass+weight*stoC*pmass
 !  DAB Do I need to do this???
         i=pat(bindex)%ijk(1); j=pat(bindex)%ijk(2); k=pat(bindex)%ijk(3) 
@@ -493,7 +495,8 @@ do iloop=1,ni
 
 enddo   !  loop through the immobile for dissolution
 
-deallocate (pmass,v_s,dmA,dmB,dmC,indys)
+deallocate (pmass,v_s,dmA,dmB,indys)
+deallocate(closeguys,close_dists)
 end subroutine abc_react
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
