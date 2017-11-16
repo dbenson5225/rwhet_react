@@ -1886,6 +1886,7 @@ double precision,allocatable    :: Dloc(:)   ! mixing portion of the dispersion 
 integer                         :: indices(maxnp), lastinject
 integer, allocatable            :: alive(:)   ! array for indexing to live mobile particles
 integer                         :: nactive ! number of active mobile particles
+integer                         :: na, ni
 
 integer:: imawupdt,i,j,k
 integer:: source(maxsource),opc(nopc),outunit(nopc+1)
@@ -1941,7 +1942,18 @@ print*,'here 1',count(pat%active),count(imp%active)
 
     call D_partition (pat,cat,dtran,ddiff)
 
-    if(dt.gt.0.0)call mix_particles(imp,pat,cat,closeguys,close_dists,dt)
+    na = count(pat%active)
+    ni = count(imp%active)
+    na = na + ni
+
+    allocate (closeguys(na),close_dists(na))
+
+print*,dt,'here 1951'
+print *, 'test'
+print *, 'dt.gt.0.0 = ', dt.gt.0.0
+
+    if(dt.gt.0.0) print *, 'dtgt'
+    if(dt.gt.0.0) call mix_particles(imp,pat,cat,closeguys,close_dists,dt)
 
 print*,dt,'here 5'
 

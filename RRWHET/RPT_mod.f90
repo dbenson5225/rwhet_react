@@ -101,9 +101,9 @@ deallocate (indices,alive)
         type(imparticle),intent(inout) :: imp(:) ! immobile particle array
         type(cell), intent(in)         :: cat(nx,ny,nz)   ! cell info (incl. diff)
         type(kdtree2), pointer         :: tree ! this is the KD tree
-        type(index_array), intent(inout), allocatable  :: closeguys(:)
+        type(index_array), intent(inout)  :: closeguys(:)
             ! this holds the indices of nearby particles
-        type(dist_array), intent(inout), allocatable   :: close_dists(:)
+        type(dist_array), intent(inout)  :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
         double precision, intent(in)   :: dt
  !       integer, intent(in)            :: alive(:)
@@ -133,6 +133,8 @@ deallocate (indices,alive)
         ! if the mass reduction is to be done AFTER the B particle loop
         ! denom1 and const1 are scalar versions of denom and const
 
+        print *, 'top mix'
+
         ! calculate total number of particles to be considered for mass balance
      na = count(pat%active)
      ni = count(imp%active)
@@ -145,7 +147,9 @@ deallocate (indices,alive)
 
      allocate(locs(dim,na+ni))
      allocate(const(ntot),denom(ntot),ds(ntot))
-     allocate(closeguys(ntot),close_dists(ntot),Dloc(na))
+     allocate(Dloc(na))
+
+print *, 'allocated'
 
      ds(1:na)=pat(alive)%ds
      Dloc(1:na)=pat(alive)%dmix
@@ -167,7 +171,7 @@ deallocate (indices,alive)
          locs(1:dim,iloop) = real(imp(iloop-na)%xyz, kdkind)
    enddo
 
-!
+print *, '174'
         ! calculate interaction distance to be numsd standard deviations of the
         ! Brownian Motion process--r2 is this distance squared
         ! ****NOTE: numsd is a global variable that is hard-coded above
@@ -177,23 +181,27 @@ deallocate (indices,alive)
 
         ! build the KD tree and search it
         ! ****NOTE: num_alloc is a global variable that is hard-coded above
-
+print *, 'pretree'
         call maketree(tree, locs, dim, ntot)
+        print *, 'posttree'
         call search(ntot, dim, tree, r2, ntot, closeguys, close_dists)
+        print *, 'postsearch'
 
         ! NOTE: this search returns the SQUARED distance between two points
             ! also, the point itself is included in the closeguys list
 
         call kdtree2_destroy(tree)
+        ! print *, 'shape(denom) = ', shape(denom)
 
         ! calculate ds, the 'support volume' of a particle
         ! ****should immobile particles be a part of this calculation?
 !        ds = omega / dble(ntot)
             ! ****NOTE: this is average inter-particle spacing of alive particles
-        denom = -4.0d0 * Dloc * dt    ! This should be a vector na big
+        ! denom = -4.0d0 * Dloc * dt    ! This should be a vector na big
             ! denom is part of the normalizing constant as well as the
             ! the denominator of the exponential argument
-        const = ds / sqrt(pi * (-denom))
+        ! print *, 'shape(ds), shape(denom), shape(const) = ', shape(ds), shape(denom), shape(const)
+        ! const = ds / sqrt(pi * (-denom))
             ! normalizing constant for v(s), multiplied by ds
             ! this is for mobile/immobile interaction, since immobile aren't
             ! moving via diffusion (note there is only one D above, for the
@@ -204,6 +212,7 @@ deallocate (indices,alive)
 
         ! loop over mobile particles
     allocate(dmass(nspec))
+    print *, '213'
 
         do iloop = 1,na ! this is the 'A' particle loop
             ! make aindex equal to index in mobile pat array
@@ -253,6 +262,9 @@ deallocate (indices,alive)
 deallocate(dmass)
 deallocate(locs)
 deallocate(const,denom,ds)
+
+     deallocate(indices,alive)
+     deallocate(Dloc)
 
 
 !   Loop over immobile particles
@@ -521,9 +533,9 @@ end subroutine abc_react
             ! to preallocate results array within KD tree module
         type(kdtree2), pointer,         intent(in   ) :: tree ! the KD tree
         real(kdkind),                   intent(in   ) :: r2 ! squared search radius
-        type(index_array), allocatable, intent(  out) :: closeguys(:)
+        type(index_array),  intent(  out) :: closeguys(:)
             ! this holds the indices of nearby particles
-        type(dist_array), allocatable,  intent(  out) :: close_dists(:)
+        type(dist_array),   intent(  out) :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
         integer                                       :: i, nf
             ! loop iterator and number of particles found by search
@@ -531,7 +543,7 @@ end subroutine abc_react
             ! results array from KD tree module
 
 !         allocate(results(n))
-         allocate (closeguys(n), close_dists(n), results(n))
+         allocate (results(n))
 
         ! loop over all particles
         do i = 1, n

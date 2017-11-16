@@ -1,11 +1,8 @@
 #!/bin/bash
 
 make
-cd example_4
-./../rwhet_exe <<!
-example4.dat
-../rw.out
-../part.out
-!
+cd rw_dolomite
+./../RRWHET_exe < filenames
+cd ..
 
 
