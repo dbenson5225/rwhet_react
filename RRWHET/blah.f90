@@ -2,27 +2,27 @@
 !
 ! This code solves arbitrary reactions and transport by particles.
 ! There are two logical ways to add reactions.  The first, in which each particle is composed
-! of one component and changing mass (Bolster et al. WRR, 2016) is best handled by taking the 
+! of one component and changing mass (Bolster et al. WRR, 2016) is best handled by taking the
 ! particle array pat(:,:) of species n=1,nspec as species 1 = pat(np), species 2 = pat(2,np) ...
-! 
-! This program follows the algorithm of Benson et al. (WRR 2016), in which each particle carries mass 
+!
+! This program follows the algorithm of Benson et al. (WRR 2016), in which each particle carries mass
 ! of any or all species.  In this case, it is best handled by changing each particle's attributes,
-! specifically the particle mass now has nspec components: particle%pmass is now 
-! particle%pmass(nspec).  This requires changing all things that track mass or concentration 
+! specifically the particle mass now has nspec components: particle%pmass is now
+! particle%pmass(nspec).  This requires changing all things that track mass or concentration
 ! to arrays of size nspec, e.g., sample%mass(nspec).
 !
 ! RWHET4.1
 ! AUTHOR: ERIC M. LABOLLE
 !
-! RWHet was developed for the benefit of the hydrologic sciences. 
-! RWHet is officially unsupported by the author, although he welcomes 
-! questions and will generally seek to answer them provided that you've 
-! read this document and he has the time.  As with any scientific software, 
-! the user should thoroughly understand its applicability, limitations and 
-! foundational theory before using it. Use of RWHet is at your own risk; 
-! the author cannot guarantee RWHet's accuracy for your application. 
-! The author assumes npat(o liability for the consequences of using RWHet.  
-! RWHet is the sole ownership of the author and RWHet or any of the code 
+! RWHet was developed for the benefit of the hydrologic sciences.
+! RWHet is officially unsupported by the author, although he welcomes
+! questions and will generally seek to answer them provided that you've
+! read this document and he has the time.  As with any scientific software,
+! the user should thoroughly understand its applicability, limitations and
+! foundational theory before using it. Use of RWHet is at your own risk;
+! the author cannot guarantee RWHet's accuracy for your application.
+! The author assumes npat(o liability for the consequences of using RWHet.
+! RWHet is the sole ownership of the author and RWHet or any of the code
 ! therein may not be distributed without this document and the author's permission.
 ! Email: emlabolle@ucdavis.edu
 !
@@ -35,7 +35,7 @@
 ! Version from 2.1 --> 2.2
 !   Handle type 1 constant c boundaries with mass injection rate on cell edge, instead of refresh
 !   Minor bug fixes in int output
-! Version 2.2 --> 3.0 
+! Version 2.2 --> 3.0
 !   Add a unique particle number pnumber to pat
 !   Add pnumber as an incremental particle number counter
 !   Add birth_place to pat
@@ -56,7 +56,7 @@
 !   Add recharge BC type 10 and 11 for CHD and GHB
 !   Add a line of output identifying the version used.
 ! Version 3.2.4
-!   Fixed recharge and CHD boundaries for the case where 
+!   Fixed recharge and CHD boundaries for the case where
 !   irevz=1
 ! Version 3.2.5
 !   Bug fix: condition dtmin< near still results in particles getting stuck
@@ -77,7 +77,7 @@ module global
     real:: xyz(4),radius,vol                    ! x,y,zbot,ztop,radius of sample location
     real:: conc(nspec),mass(nspec)              ! concentration for all time
     integer*2:: ijk(4),itype,nzone,zone(100)    ! cell location and type (1 = x,y,z, 0 = i,j,k) of sample location
-  end type sample            
+  end type sample
   type particle
     real:: xyz(3),birth_day,death_day       !,birth_place(3)  ! location,birth time
     double precision:: pmass(nspec)         ! mass of each species
@@ -100,17 +100,17 @@ module global
 
 ! define a cell
   type cell
-    real::             tc                   ! time step control 
+    real::             tc                   ! time step control
     double precision:: cmass(nspec),mass_remove(nspec)    ! mass in cell, mass lost since last report
     double precision:: cimmass(inspec)      ! Immobile mass in cell
-    integer::          np_cell,np_remove    ! # of particles per cell, # lost since last report 
-    integer::          nimp_cell,nimp_remove   ! # of IMMOBILE particles per cell, # lost since last report 
-    integer::          bc_number,zone       ! bc condition #, zone number                
-  end type cell            
-! boundary  
+    integer::          np_cell,np_remove    ! # of particles per cell, # lost since last report
+    integer::          nimp_cell,nimp_remove   ! # of IMMOBILE particles per cell, # lost since last report
+    integer::          bc_number,zone       ! bc condition #, zone number
+  end type cell
+! boundary
   type boundary
     integer:: bc_type,ijk(3),kbot,ktop,np,group       ! boundary type,location,group number
-    integer:: np_remove                     ! # of particles per cell, # lost since last report 
+    integer:: np_remove                     ! # of particles per cell, # lost since last report
     integer:: ijkm(3),ijkp(3)               ! ijk loc. of beginning and end of source
     real:: conc(nspec),refresh,nptime       ! aqueous phase concentrations,refresh rate control
     real:: flux,fluxin,fluxout              ! flux in cell, total flux into MAW, total flux out of MAW
@@ -118,17 +118,17 @@ module global
     double precision:: pmass(nspec)         ! particle mass for all species
     double precision:: massrate(nspec)      ! rate of injection M/T for each species
     double precision:: mass_remove(nspec)   ! mass removed
-    double precision:: maw(nspec)           
+    double precision:: maw(nspec)
  !   real,allocatable:: flux_ijk(:)         ! flux for ijk locations bounded by ijkm and ijkp
     real:: tbeg,tend,dt_type1               ! beginning time, ending time
   end type boundary
   type recharge
-    real:: flow                             ! recharge flux 
+    real:: flow                             ! recharge flux
     integer:: k                             ! layer
-  end type recharge            
+  end type recharge
   type constant_head
-    real:: flow                             ! constant head flux 
-  end type constant_head            
+    real:: flow                             ! constant head flux
+  end type constant_head
 
 !
 ! nx,ny,nz		-	problem dimensions
@@ -150,8 +150,8 @@ module global
 ! mass(spec)        - total (mobile?) mass in the domain
 ! immass(inspec)    - total (immobile?) mass in the domain
 ! netmassp(3)  - mass passing through maximum extents of domain
-! netmassm(3)  - mass passing through minimum extents of domain 
-! pnumber      - incremental particle number 
+! netmassm(3)  - mass passing through minimum extents of domain
+! pnumber      - incremental particle number
   integer:: nx,ny,nz,nxy,mx,my,mz,nxyz,np,maxnp,pnumber,nline
   integer:: nimp,impnumber
   integer:: nbounds,maxbnd,maxsource,nsource,npntsrc,nchd
@@ -162,10 +162,10 @@ module global
   integer:: inpnt,inbnd,invel,inbgr,insam,ibugout
   integer:: isotropic,iadvect,interp,nzone
   integer:: irevz,istream,nres
-  integer:: iseed1,iseed2,nran 
+  integer:: iseed1,iseed2,nran
   integer:: iloop
 
-  integer:: kstp,kper ! MODFLOW step and stress period from vlc input 
+  integer:: kstp,kper ! MODFLOW step and stress period from vlc input
 
   integer:: inobgr !(if 1 then we read parameter fields)
 
@@ -173,7 +173,7 @@ module global
 
   real:: dx,dy,dz,dx2,dy2,dz2,ax,ay,az,vol
   real:: dtinit,tinit,dtminimum,dtcntrl,bke
-  real:: rmx,rmy,rmz 
+  real:: rmx,rmy,rmz
   real:: smallxyz(3),dxyz(3),near
 
 
@@ -182,7 +182,7 @@ module global
   double precision:: mass(nspec),netmass(nspec),netmassp(3,nspec),netmassm(3,nspec)
   double precision:: massbc(nbtype+1,nspec),immass(inspec)
   double precision:: cres
-  double precision:: rm 
+  double precision:: rm
   double precision:: curtime,tnextopc,tnextbnd,tnextvel
   double precision:: tnextpnt,tnextsrc,tmax,dt
   double precision:: dtranfrac,difffrac
@@ -193,7 +193,7 @@ module global
 end module global
 !------------------------------------------------------------------------------------------
 PROGRAM RWHET
-! comment this line to compile on non-windows 
+! comment this line to compile on non-windows
 !USE DFPORT
 use global
 use RPT_mod
@@ -201,17 +201,17 @@ implicit none
 !
 ! dt                                  - current time step
 ! curtime                             - current time
-! tinit                               - initial time 
-! tmax                                - maximum time 
+! tinit                               - initial time
+! tmax                                - maximum time
 ! dtvel,dtbnd,dtopc,dtmax             - difference between current time
-!                                       and time to update attribute bnd, vel, etc. 
+!                                       and time to update attribute bnd, vel, etc.
 ! tnextbnd,tnextopc,tnextvel          - time of next change in BC's, OPC and VEL
 ! source(maxsource)                   - pointer to bounds for current constant concentration sources
 !                                       bounds(i,ibounds), nsource = number of current SOURCE's
 ! maxsource                           - maximum number of allowed SOURCE's at any one time
 
-! opc(nopc)                           - ouput control opc(iopc) = 1 print output 
-! outunit(nopc+1)                     - unit number for output of attribute iopc 
+! opc(nopc)                           - ouput control opc(iopc) = 1 print output
+! outunit(nopc+1)                     - unit number for output of attribute iopc
 ! outfname(nopc)                      - file name for       "                                  "
 !
 ! netxyzm,netxyzp ...                 - breakthrough counters at extents of model
@@ -255,10 +255,10 @@ ioutp=8
 ibugout=9
 iout=10
 inbas=11
-inopc=12      
-inpar=13           
-invlc=14           
-inbnd=15          
+inopc=12
+inpar=13
+invlc=14
+inbnd=15
 invel=16
 inpnt=17
 inbgr=18
@@ -367,7 +367,7 @@ xyzmin(:)=dble((ixyzmin(:)-1)*dxyz(:))
 xyzmax(:)=dble(ixyzmax(:))*dble(dxyz(:))
 xyzl2(:)=(ixyzmax(:)-ixyzmin(:)+1)*dble(dxyz(:))/2.0d+0 ! half total length
 xyzc(:)=(xyzmax(:)+xyzmin(:))/2.0d+0 ! center location
-!.....specify epsilon as 10**log10(machine precision)/2 
+!.....specify epsilon as 10**log10(machine precision)/2
 near=10**(0.5*nint(log10(abs(nearest(0.0,-1.0)))))
 ! small increment in each direction, based on discretization
 smallxyz(1)=mx*small*dx
@@ -375,10 +375,10 @@ smallxyz(2)=my*small*dy
 smallxyz(3)=mz*small*dz
 write(iout,1000)near,smallxyz
 write(*,1000)near,smallxyz
-1000 format(" Epsilon based on platform precision:",e10.5/& 
-            "                            small dx:",e10.5/& 
-            "                            small dy:",e10.5/& 
-            "                            small dz:",e10.5) 
+1000 format(" Epsilon based on platform precision:",e10.5/&
+            "                            small dx:",e10.5/&
+            "                            small dy:",e10.5/&
+            "                            small dz:",e10.5)
 !//    " Epsilon to adjust particle locations (x,y,z): ",3(e10.5,1x)//)
 ! DAB check these for species expansion:
 netmassp=0.0; netmassm=0.0
@@ -389,9 +389,9 @@ netsplit=0
 ax=dy*dz; ay=dx*dz; az=dx*dy
 vol=az*dz ! cell volume
 !.....rmx,rmy,rmz = large number if dimension inactive, or else = 1.0
-rmx=(dble(large)-dble(mx)*dble(large)+1.0d+0) 
-rmy=(dble(large)-dble(my)*dble(large)+1.0d+0) 
-rmz=(dble(large)-dble(mz)*dble(large)+1.0d+0) 
+rmx=(dble(large)-dble(mx)*dble(large)+1.0d+0)
+rmy=(dble(large)-dble(my)*dble(large)+1.0d+0)
+rmz=(dble(large)-dble(mz)*dble(large)+1.0d+0)
 !.....time
 curtime=tinit
 dt=dtinit
@@ -425,7 +425,7 @@ outunit(9)=iplotsolid
 if(ibug.ge.1)then;string(1)=' OPENING PARAMETER FILE!';call debug(ibugout,string,nline);endif
 inquire (file=fnamepar, exist=flexist)
 if(.not.flexist)stop ' Parameter file does not exist'
-open(inpar,file=fnamepar,status="old")  
+open(inpar,file=fnamepar,status="old")
 !.....read number of zones, if zero use one zone
 call skip(inpar)
 if(ibug.ge.1)then;string(1)=' ALLOCATING MEMORY FOR PARAMETER ARRAYS!';call debug(ibugout,string,nline);endif
@@ -479,7 +479,7 @@ if(ibug.ge.1)then;string(1)=' READING BOUNDARY CONDITIONS!';call debug(ibugout,s
 call bndinput(bounds,cat,por,ret)
 !
 !.....POINT SOURCES
-!   
+!
 if(ibug.ge.1)then;string(1)=' OPENING POINT SOURCE FILE!';call debug(ibugout,string,nline);endif
 inquire (file=fnamepnt, exist=flexist)
 if(.not.flexist)stop ' Point source file does not exist'
@@ -517,7 +517,7 @@ if(ierror.ne.0)goto 9994
 call saminput(sam,cat,por,ret)
 !
 !.....REACTION PARAMS
-!   
+!
 if(ibug.ge.1)then;string(1)=' OPENING REACTION PARAMS FILE!';call debug(ibugout,string,nline);endif
 inquire (file=fnamerxn, exist=flexist)
 if(.not.flexist)stop ' Reaction params file does not exist'
@@ -533,7 +533,7 @@ if(iread_error.eq.-2)goto 9995
 !
 !.....INITIALIZE SYSTEM
 !
-!.....initialize output control 
+!.....initialize output control
 if(ibug.ge.1)then;string(1)=' READY TO CRANK OUT SOLUTION!';call debug(ibugout,string,nline);endif
 if(ibug.ge.1)then;string(1)=' INITIALIZING SYSTEM!';call debug(ibugout,string,nline);endif
 if(ibug.ge.1)then;string(1)=' OPCUPDT!';call debug(ibugout,string,nline);endif
@@ -550,7 +550,7 @@ if(dtcntrl.ne.0.0)call tcntrl(vel3,por,ret,dtran,dlong,ddiff,cat)
 if(curtime.eq.tnextbnd)then
   if(ibug.ge.1)then;string(1)=' BNDUPDT!';call debug(ibugout,string,nline);endif
   call bndupdt(bounds,source,cat,pat)
-!.....initialize Courant condition for sources 
+!.....initialize Courant condition for sources
   call courant(source,bounds,vel3,cat,por)
 endif
 !.....initial particle distribution (DAB MUST INPUT INITIAL IMMOBILE PARTICLES HERE)
@@ -663,7 +663,7 @@ read(inbas,*,err=9999)ibug
 call skip(inbas)
 read(inbas,'(a40)',err=9999)dbgfile
 open(ibugout,file=dbgfile)
-! 
+!
 if(ibug.ge.1)then;string(1)=' READING MAIN INPUT!';call debug(ibugout,string,1);endif
 ! read flag to write out mt3d output or not
 call skip(inbas)
@@ -672,7 +672,7 @@ call skip(inbas)
 read(inbas,*,err=9999)dx,dy,dz
 !.minimum a maximum extent of simulation
 call skip(inbas)
-read(inbas,*,err=9999)ixyzmin(1),ixyzmax(1) ! model domain includes ixmin and ixmax 
+read(inbas,*,err=9999)ixyzmin(1),ixyzmax(1) ! model domain includes ixmin and ixmax
 call skip(inbas)
 read(inbas,*,err=9999)ixyzmin(2),ixyzmax(2)
 call skip(inbas)
@@ -720,7 +720,7 @@ if(iostatus.ne.0)then
     write(iout,*)' Error reading output control file name in main input'
     write(*,*)' End of file encountered reading output control file name in main input '
   endif
-endif  
+endif
 call skip(inbas)
 read(inbas,'(a)',iostat=iostatus)fnamepar
 if(iostatus.ne.0)then
@@ -731,7 +731,7 @@ if(iostatus.ne.0)then
     write(iout,*)' Error reading parameter file name in main input'
     write(*,*)' End of file encountered reading parameter file name in main input '
   endif
-endif  
+endif
 call skip(inbas)
 read(inbas,'(a)',iostat=iostatus)fnamevel
 if(iostatus.ne.0)then
@@ -742,7 +742,7 @@ if(iostatus.ne.0)then
     write(iout,*)' Error reading velocity file name in main input'
     write(*,*)' End of file encountered reading velocity file name in main input '
   endif
-endif  
+endif
 call skip(inbas)
 read(inbas,'(a)',iostat=iostatus)fnamebnd
 if(iostatus.ne.0)then
@@ -753,7 +753,7 @@ if(iostatus.ne.0)then
     write(iout,*)' Error reading boundary file name in main input'
     write(*,*)' End of file encountered reading boundary file name in main input '
   endif
-endif  
+endif
 call skip(inbas)
 read(inbas,'(a)',iostat=iostatus)fnamepnt
 if(iostatus.ne.0)then
@@ -764,7 +764,7 @@ if(iostatus.ne.0)then
     write(iout,*)' Error reading point file name in main input'
     write(*,*)' End of file encountered reading point file name in main input '
   endif
-endif  
+endif
 call skip(inbas)
 read(inbas,'(a)',iostat=iostatus)fnamesam
 if(iostatus.ne.0)then
@@ -775,7 +775,7 @@ if(iostatus.ne.0)then
     write(iout,*)' Error reading sample file name in main input'
     write(*,*)' End of file encountered reading sample file name in main input '
   endif
-endif  
+endif
 call skip(inbas)
 read(inbas,'(a)',iostat=iostatus)fnamerxn
 if(iostatus.ne.0)then
@@ -786,7 +786,7 @@ if(iostatus.ne.0)then
     write(iout,*)' Error reading sample file name in main input'
     write(*,*)' End of file encountered reading reaction params file name in main input '
   endif
-endif  
+endif
 
 
 ! compute total number of nodes
@@ -900,7 +900,7 @@ write(iout,'(/a)')&
 '                    B O U N D A R Y   C O N D I T I O N S'
 write(*,'(/a)')&
 '                    B O U N D A R Y   C O N D I T I O N S'
-! 
+!
 do ibtype=1,nbtype
   nitype(ibtype)=0
 enddo
@@ -937,17 +937,17 @@ do
     write(iout,fmt2,err=9999)pmass
     write(iout,fmt3,err=9999)massrate
     nitype(itype)=nitype(itype)+1
-!.absorbing 
+!.absorbing
   elseif(itype.eq.3)then
     read(inbnd,*,iostat=iostatus)itype,i,j,kbot,ktop,tbeg,tend,numbnd
     write(iout,2002,err=9999)nbounds,itype,i,j,kbot,ktop,tbeg,tend,numbnd
     nitype(itype)=nitype(itype)+1
-!.well with specified flux 
+!.well with specified flux
   elseif(itype.eq.4)then
     read(inbnd,*,iostat=iostatus)itype,i,j,kbot,ktop,wflux,tbeg,tend,numbnd
     write(iout,2003,err=9999)nbounds,itype,i,j,kbot,ktop,wflux,tbeg,tend,numbnd
     nitype(itype)=nitype(itype)+1
-!.well with unknown flux, flux calculated from divergence 
+!.well with unknown flux, flux calculated from divergence
   elseif(itype.eq.5)then
     read(inbnd,*,iostat=iostatus)itype,i,j,kbot,ktop,tbeg,tend,numbnd
     write(iout,2004,err=9999)nbounds,itype,i,j,kbot,ktop,tbeg,tend,numbnd
@@ -961,7 +961,7 @@ do
     write(iout,fmt2,err=9999)pmass
     write(iout,fmt3,err=9999)massrate
     nitype(itype)=nitype(itype)+1
-!.well with unknown flux, flux calculated from divergence 
+!.well with unknown flux, flux calculated from divergence
   elseif(itype.eq.7)then
     read(inbnd,*,iostat=iostatus)itype,i,j,kbot,ktop,tbeg,tend,numbnd
     write(iout,2007,err=9999)nbounds,itype,i,j,kbot,ktop,tbeg,tend,numbnd
@@ -1125,7 +1125,7 @@ do
 !...particle masses
     tnextbnd=min(dble(tbeg),tnextbnd)
   endif
-enddo 
+enddo
 !
 nbtotal=0
 do ibtype=1,nbtype
@@ -1158,7 +1158,7 @@ enddo
 !      if((tend2.gt.tbeg.and.tend2.lt.tend).or.(tbeg2.gt.tbeg.and.tbeg2.lt.tend))then
 !        write(*,*)bounds(ibounds2)
 !        stop ' Multiple boundaries defined at same time and place'
-!      endif            
+!      endif
 !!    endif
 !  enddo
 !enddo
@@ -1267,7 +1267,7 @@ return
        ' beginning time        =  ',e10.5/&
        ' ending time           =  ',e10.5/&
        ' boundary group        =  ',i10)
-       
+
 2005 format(' Boundary Type                   Number Read'/&
        ' ------------------------------  -----------'/&
        ' Constant Conc.             (1)',i10/&
@@ -1513,10 +1513,10 @@ end
 subroutine parinput(por,ret,dlong,dtran,ddiff,decay,cat)
 ! parameter input
 ! parameters include porosity, longitudinal, and lateral dispersivities
-! and retardation. Parameters can be indexed to zone values read from a 
+! and retardation. Parameters can be indexed to zone values read from a
 ! binary grid file (*.bgr).
 use global
-parameter (npar=6) 
+parameter (npar=6)
 type (cell)::     cat(nx,ny,nz)
 real:: por(nzone),ret(nzone),dlong(nzone),dtran(nzone),ddiff(nzone),decay(nzone)
 character (len=25) parami(npar),param,temp
@@ -1549,13 +1549,13 @@ elseif(nzone.eq.1)then
 !.constant zone
   cat(:,:,:)%zone=1
 else
-! lets try several different formats here until isuccess = 1 
+! lets try several different formats here until isuccess = 1
   isuccess=0
 !.zones specified in bgr file
   read(inpar,'(a)',err=9998)bgrfl
   write(iout,2000)bgrfl,nzone
   write(*,2000)bgrfl,nzone
-!.read bgr file            
+!.read bgr file
   inquire (file=bgrfl, exist=flexist)
   if(.not.flexist)then
     write(*,*)' BGR file:',bgrfl
@@ -1596,7 +1596,7 @@ else
        write(iout,*)' with izone as integer*4'
        write(*,*)' with izone as integer*4'
      endif
-   endif    
+   endif
 ! READ FIRST LINE
    if(iread.eq.0)then
      read(inbgr,*,iostat=istatus)idim(1),idim(2),idim(3)
@@ -1604,8 +1604,8 @@ else
        close(inbgr)
        write(iout,*)' Error reading bgr file value irank'
        write(*,*)' Error reading bgr file value irank'
-       write(iout,*)' Trying new BGR file format '     
-       write(*,*)' Trying new BGR file format '     
+       write(iout,*)' Trying new BGR file format '
+       write(*,*)' Trying new BGR file format '
        cycle
      endif
    elseif(iread.gt.0)then
@@ -1614,8 +1614,8 @@ else
        close(inbgr)
        write(iout,*)' Error reading bgr file value irank'
        write(*,*)' Error reading bgr file value irank'
-       write(iout,*)' Trying new BGR file format '     
-       write(*,*)' Trying new BGR file format '     
+       write(iout,*)' Trying new BGR file format '
+       write(*,*)' Trying new BGR file format '
        cycle
      endif
      write(*,*)' BGR file rank = ',irank
@@ -1628,8 +1628,8 @@ else
        close(inbgr)
        write(iout,*)' Error reading bgr file value idim'
        write(*,*)' Error reading bgr file value idim'
-       write(iout,*)' Trying new BGR file format '     
-       write(*,*)' Trying new BGR file format '     
+       write(iout,*)' Trying new BGR file format '
+       write(*,*)' Trying new BGR file format '
        cycle
      endif
    endif
@@ -1640,8 +1640,8 @@ else
      close(inbgr)
        write(iout,*)' Error reading TSIM file dimensions'
        write(*,*)' Error reading TSIM file dimensions'
-       write(iout,*)' Trying new TSIM file format '     
-       write(*,*)' Trying new TSIM file format '     
+       write(iout,*)' Trying new TSIM file format '
+       write(*,*)' Trying new TSIM file format '
      cycle
    endif
 ! READ ZONES
@@ -1652,8 +1652,8 @@ else
        close(inbgr)
        write(iout,*)' Error reading TSIM file indicators'
        write(*,*)' Error reading TSIM file indicators'
-       write(iout,*)' Trying new TSIM file format '     
-       write(*,*)' Trying new TSIM file format '     
+       write(iout,*)' Trying new TSIM file format '
+       write(*,*)' Trying new TSIM file format '
        cycle
      endif
    elseif(iread.eq.1.or.iread.eq.3)then
@@ -1663,8 +1663,8 @@ else
        close(inbgr)
        write(iout,*)' Error reading bgr file indicators'
        write(*,*)' Error reading bgr file indicators'
-       write(iout,*)' Trying new BGR file format '     
-       write(*,*)' Trying new BGR file format '     
+       write(iout,*)' Trying new BGR file format '
+       write(*,*)' Trying new BGR file format '
        cycle
      endif
    else
@@ -1674,8 +1674,8 @@ else
        close(inbgr)
        write(iout,*)' Error reading bgr file indicators'
        write(*,*)' Error reading bgr file indicators'
-       write(iout,*)' Trying new BGR file format '     
-       write(*,*)' Trying new BGR file format '     
+       write(iout,*)' Trying new BGR file format '
+       write(*,*)' Trying new BGR file format '
        cycle
      endif
    endif
@@ -1691,8 +1691,8 @@ else
        write(*,*)' Error TSIM file value at i,j,k ',i,j,k,' is ',ic
        write(iout,*)' Number of zones  = ',nzone
        write(*,*)' Number of zones  = ',nzone
-       write(iout,*)' Trying new TSIM file format '     
-       write(*,*)' Trying new TSIM file format '     
+       write(iout,*)' Trying new TSIM file format '
+       write(*,*)' Trying new TSIM file format '
        close(inbgr)
        isuccess=0
        exit
@@ -1705,13 +1705,13 @@ else
    enddo
    close(inbgr)
    if(isuccess.eq.1)exit
-  enddo      
+  enddo
   if(isuccess.eq.0)then
     write(iout,*)' Error in bgr file'
     write(*,*)' Error in bgr file'
-    stop ' Exiting' 
+    stop ' Exiting'
   endif
-endif        
+endif
 !.read zone data for each parameter
 do ipar=1,npar
   iparam(ipar)=0
@@ -1781,7 +1781,7 @@ do
       else
         do iz=1,nzone
           read(inpar,*,iostat=iread_error)izone,val
-          if(iread_error.ne.0)goto 9998      
+          if(iread_error.ne.0)goto 9998
           if(izone.ne.iz)goto 9998
           if(ipar.eq.1)por(izone)=val
           if(ipar.eq.2)ret(izone)=val
@@ -1802,7 +1802,7 @@ enddo
 close (inpar)
 !.did we get all  of the parameters needed?
 do ipar=1,npar
-  if(iparam(ipar).eq.0)then 
+  if(iparam(ipar).eq.0)then
     write(*,*)' Missing input for ',parami(ipar)
     write(iout,*)' Missing input for ',parami(ipar)
     goto 9998
@@ -1826,19 +1826,19 @@ if(isotropic.eq.0)then
       ' option supported only for isotropic D'
       write(iout,*)' Transverse dispersivity is heterogeneous:'//&
       ' option supported only for isotropic D'
-      goto 9998 
+      goto 9998
     elseif(dlong(izone).ne.dlong(izone2))then
       write(*,*)' Longitudinal dispersivity is heterogeneous:'//&
       ' option supported only for isotropic D'
       write(iout,*)' Longitudinal dispersivity is heterogeneous:'//&
       ' option supported only for isotropic D'
-      goto 9998 
-      elseif(ddiff(izone).ne.ddiff(izone2))then 
+      goto 9998
+      elseif(ddiff(izone).ne.ddiff(izone2))then
       write(*,*)' Diffusion Coef. is heterogeneous: '//&
       'option supported only for isotropic D'
       write(iout,*)' Diffusion Coef. is heterogeneous: '//&
       'option supported only for isotropic D'
-      goto 9998 
+      goto 9998
     endif
   enddo
   enddo
@@ -1881,7 +1881,7 @@ type(index_array), allocatable  :: closeguys(:)
             ! this holds the indices of nearby particles
 type(dist_array), allocatable   :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
-double precision,allocatable    :: Dloc(:)   ! mixing portion of the dispersion at live pats 
+double precision,allocatable    :: Dloc(:)   ! mixing portion of the dispersion at live pats
 
 integer                         :: indices(maxnp), lastinject
 integer, allocatable            :: alive(:)   ! array for indexing to live mobile particles
@@ -1910,7 +1910,7 @@ do; if(.not.(curtime.lt.tmax))exit
   curtime=curtime+dt
   sngldt=dt
 !.move all existing particles up to curtime
-! Split the components of the disp/diff tensor between mixing, reaction, and random walks via 
+! Split the components of the disp/diff tensor between mixing, reaction, and random walks via
 ! the diagonal component using 0<= dtranfrac and difffrac <=1
 
     call D_partition (pat,cat,dtran,ddiff)
@@ -1947,7 +1947,7 @@ print*,dt,'here 5'
 
     if(dt.gt.0.0)    call abc_react(imp,pat,cat,closeguys,close_dists,dt)
 
-!    deallocate(closeguys,close_dists)
+   deallocate(closeguys,close_dists)
 print*,'here 6'
 
 !.update velocities
@@ -1970,7 +1970,7 @@ print*,'here 6'
   if((curtime.eq.tnextbnd.or.curtime.eq.tnextvelo).and.ibug.ge.1)then
     string(1)=' CALL COURANT!';call debug(ibugout,string,nline)
   endif
-  if(curtime.eq.tnextbnd.or.curtime.eq.tnextvelo)&   
+  if(curtime.eq.tnextbnd.or.curtime.eq.tnextvelo)&
   call courant(source,bounds,vel3,cat,por)
 !.distribute particles from sources
   if((curtime.eq.tnextpnt).and.ibug.ge.1)then
@@ -2045,7 +2045,7 @@ external movep
       do; if(trelease.gt.sngldt)exit
         if(dt-trelease.lt.dtsource)pmass=pmass*((dt-trelease)/dtsource) ! distribute remaining fractional mass
         if(maxval(pmass).le.0.0)exit
-        mass=mass+pmass     
+        mass=mass+pmass
         bounds(ibounds)%np_remove=bounds(ibounds)%np_remove+1
         bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove+ pmass
         npbc(itype)=npbc(itype)+1
@@ -2136,7 +2136,7 @@ external movep
       if(qtotal.ne.0.)then
         probc=probc/qtotal
         nside=iside
-        dtsource=maxval(pmass/massrate)  ! DAB not sure about maxval - some pmass might be zero? 
+        dtsource=maxval(pmass/massrate)  ! DAB not sure about maxval - some pmass might be zero?
         tinitsrc=curtime-dt ! initial time
         trelease=0.0        ! release time
         itrelease=1
@@ -2160,8 +2160,8 @@ external movep
             if(r.le.probc(is))exit
           enddo
 ! Find k and iside
-          k=loc(2,is) 
-          iside=loc(1,is) 
+          k=loc(2,is)
+          iside=loc(1,is)
 ! Place particles and move
           zm=(k-1)*dz
           if(iside.eq.1)then
@@ -2184,7 +2184,7 @@ external movep
            dxbc=dx-2*bcdxyz*dx; dybc=dy-2*bcdxyz*dy; dzbc=bcdxyz*dz
           endif
           call placeu(srctime,xmbc,ymbc,zmbc,dxbc,dybc,dzbc,pat,cat,1,pmass,iptype,ierr)
-          call movep(np,np,dtsrc,vel3,por,ret,dlong,dtran,ddiff,decay,pat,cat,bounds) 
+          call movep(np,np,dtsrc,vel3,por,ret,dlong,dtran,ddiff,decay,pat,cat,bounds)
           trelease=itrelease*dtsource
           itrelease=itrelease+1
         enddo
@@ -2199,7 +2199,7 @@ external movep
       ym=bounds(ibounds)%bc_xyzm(2)
       sx=bounds(ibounds)%bc_xyzs(1)
       sy=bounds(ibounds)%bc_xyzs(2)
-      dtsource=maxval(pmass/massrate)   ! DAB not sure, maybe some pmass(nspec) = 0? 
+      dtsource=maxval(pmass/massrate)   ! DAB not sure, maybe some pmass(nspec) = 0?
       tinitsrc=curtime-dt ! initial time
       trelease=0.0        ! release time
       itrelease=1
@@ -2233,7 +2233,7 @@ external movep
 ! cycle through all cells
       do i=im,ip;do j=jm,jp
         flow=bke*rech(i,j)%flow
-        if(flow.le.0.0)cycle      
+        if(flow.le.0.0)cycle
         massrate=dble(c)*dble(flow) ! massrate = c*Q(i,j) [M/T], where Q is flow rate
         pmass=massrate/dble(nptime)  ! pmass = massrate [M/T]/nptime [particles/T] in each cell
         dtsource=maxval(pmass/massrate)    ! DAB these should all be equal by definition?
@@ -2268,14 +2268,14 @@ external movep
       km=bounds(ibounds)%ijkm(3)
       ip=bounds(ibounds)%ijkp(1)
       jp=bounds(ibounds)%ijkp(2)
-      kp=bounds(ibounds)%ijkp(3)  
+      kp=bounds(ibounds)%ijkp(3)
 ! cycle through all cells
       do k=km,kp;do j=jm,jp;do i=im,ip
         flow=chd(i,j,k)%flow
-        if(bke*flow.le.0.0)cycle      
+        if(bke*flow.le.0.0)cycle
         massrate=dble(c)*dble(bke*flow) ! massrate = c*Q(i,j) [M/T], where Q is flow rate
         pmass=massrate/dble(nptime)  ! pmass = massrate [M/T]/nptime [particles/T] in each cell
-        dtsource=maxval(pmass/massrate)          ! DAB still not sure about maxval 
+        dtsource=maxval(pmass/massrate)          ! DAB still not sure about maxval
         tinitsrc=curtime-dt ! initial time
         trelease=0.0        ! release time
         itrelease=1
@@ -2291,7 +2291,7 @@ external movep
             if(ierr.eq.0)exit
             write(iout,*)' WARNING: PLACEU ATTEMPTED TO PLACE A SRC TYPE 10 PARTICLE OUTSIDE OF THE DOMAIN'
           enddo
-! particle was on edge or outside of domain; ignore and start over 
+! particle was on edge or outside of domain; ignore and start over
           mass=mass+pmass
 
           bounds(ibounds)%np_remove=bounds(ibounds)%np_remove+1
@@ -2301,7 +2301,7 @@ external movep
            massbc(itype,iloop)=massbc(itype,iloop)+pmass(iloop)
         enddo
 !          massbc(itype)=massbc(itype)+pmass
-          call movep(np,np,dtsrc,vel3,por,ret,dlong,dtran,ddiff,decay,pat,cat,bounds)  ! full anisotropic displacement          
+          call movep(np,np,dtsrc,vel3,por,ret,dlong,dtran,ddiff,decay,pat,cat,bounds)  ! full anisotropic displacement
           trelease=itrelease*dtsource
           itrelease=itrelease+1
         enddo
@@ -2314,7 +2314,7 @@ external movep
       km=bounds(ibounds)%ijkm(3)
       ip=bounds(ibounds)%ijkp(1)
       jp=bounds(ibounds)%ijkp(2)
-      kp=bounds(ibounds)%ijkp(3)  
+      kp=bounds(ibounds)%ijkp(3)
 ! cycle through all cells
       do k=km,kp;do j=jm,jp;do i=im,ip
         flow=0.0
@@ -2324,13 +2324,13 @@ external movep
           flow=-bke*vel3(3,i,j,k-1)*az
 		  call release_type11(movep,cat,pat,rech,chd,vel3,por,ret,dlong,dtran,&
 		  ddiff,decay,bounds,source,sngldt,xm,ym,zm,sx,sy,sz,flow,massrate,nptime,c,ibounds,itype)
-        endif           
+        endif
         if(k.eq.kp)then
           xm=(i-1)*dx;ym=(j-1)*dy;zm=(k)*dz
           sx=dx;sy=dy;sz=bcdxyz*dz
           flow=+bke*vel3(3,i,j,k)*az
 		  call release_type11(movep,cat,pat,rech,chd,vel3,por,ret,dlong,dtran,&
-		  ddiff,decay,bounds,source,sngldt,xm,ym,zm,sx,sy,sz,flow,massrate,nptime,c,ibounds,itype)           
+		  ddiff,decay,bounds,source,sngldt,xm,ym,zm,sx,sy,sz,flow,massrate,nptime,c,ibounds,itype)
         endif
         if(j.eq.jm)then
           xm=(i-1)*dx;ym=(j-1)*dy;zm=(k-1)*dz
@@ -2338,13 +2338,13 @@ external movep
           flow=-bke*vel3(2,i,j-1,k)*ay
 		  call release_type11(movep,cat,pat,rech,chd,vel3,por,ret,dlong,dtran,&
 		  ddiff,decay,bounds,source,sngldt,xm,ym,zm,sx,sy,sz,flow,massrate,nptime,c,ibounds,itype)
-        endif           
+        endif
         if(j.eq.jp)then
           xm=(i-1)*dx;ym=(j)*dy;zm=(k-1)*dz
           sx=dx;sy=bcdxyz*dy;sz=dz
-          flow=+bke*vel3(2,i,j,k)*ay  
+          flow=+bke*vel3(2,i,j,k)*ay
 		  call release_type11(movep,cat,pat,rech,chd,vel3,por,ret,dlong,dtran,&
-		  ddiff,decay,bounds,source,sngldt,xm,ym,zm,sx,sy,sz,flow,massrate,nptime,c,ibounds,itype)         
+		  ddiff,decay,bounds,source,sngldt,xm,ym,zm,sx,sy,sz,flow,massrate,nptime,c,ibounds,itype)
         endif
         if(i.eq.im)then
           xm=(i-1)*dx;ym=(j-1)*dy;zm=(k-1)*dz
@@ -2352,16 +2352,16 @@ external movep
           flow=-bke*vel3(1,i-1,j,k)*ax
 		  call release_type11(movep,cat,pat,rech,chd,vel3,por,ret,dlong,dtran,&
 		  ddiff,decay,bounds,source,sngldt,xm,ym,zm,sx,sy,sz,flow,massrate,nptime,c,ibounds,itype)
-        endif           
+        endif
         if(i.eq.ip)then
           xm=(i)*dx;ym=(j-1)*dy;zm=(k-1)*dz
           sx=bcdxyz*dx;sy=dy;sz=dz
           flow=+bke*vel3(1,i,j,k)*ax
 		  call release_type11(movep,cat,pat,rech,chd,vel3,por,ret,dlong,dtran,&
-		  ddiff,decay,bounds,source,sngldt,xm,ym,zm,sx,sy,sz,flow,massrate,nptime,c,ibounds,itype)          
+		  ddiff,decay,bounds,source,sngldt,xm,ym,zm,sx,sy,sz,flow,massrate,nptime,c,ibounds,itype)
         endif
       enddo;enddo;enddo
-    endif          
+    endif
   enddo
 return
 end
@@ -2388,7 +2388,7 @@ double precision pmass(nspec),massrate(nspec),dtsource,trelease,tinitsrc
 if(flow.le.0.0)return
 massrate=dble(c)*dble(flow) ! massrate = c*Q(i,j) [M/T], where Q is flow rate
 pmass=massrate/dble(nptime)  ! pmass = massrate [M/T]/nptime [particles/T] in each cell
-dtsource=maxval(pmass/massrate)   ! DAB unsure about maxval 
+dtsource=maxval(pmass/massrate)   ! DAB unsure about maxval
 tinitsrc=curtime-dt ! initial time
 trelease=0.0        ! release time
 itrelease=1
@@ -2403,7 +2403,7 @@ do; if(trelease.gt.sngldt)exit
    if(ierr.eq.0)exit
    write(iout,*)' WARNING: PLACEU ATTEMPTED TO PLACE A SRC TYPE 11 PARTICLE OUTSIDE OF THE DOMAIN'
  enddo
- ! particle was on edge or outside of domain; ignore and start over 
+ ! particle was on edge or outside of domain; ignore and start over
  mass=mass+pmass
  bounds(ibounds)%np_remove=bounds(ibounds)%np_remove+1
  bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove+ pmass
@@ -2412,13 +2412,13 @@ do; if(trelease.gt.sngldt)exit
       massbc(itype,iloop)=massbc(itype,iloop)+pmass(iloop)
    enddo
 ! massbc(itype)=massbc(itype)+pmass
- call movep(np,np,dtsrc,vel3,por,ret,dlong,dtran,ddiff,decay,pat,cat,bounds)  ! full anisotropic displacement          
+ call movep(np,np,dtsrc,vel3,por,ret,dlong,dtran,ddiff,decay,pat,cat,bounds)  ! full anisotropic displacement
  trelease=itrelease*dtsource
  itrelease=itrelease+1
 enddo
 return
 end
-!------------------------------------------------------------------      
+!------------------------------------------------------------------
 ! placerch1
 !------------------------------------------------------------------
 subroutine placerch1(time,xm,ym,sx,sy,pat,cat,npart,pmass,iptype,rech)
@@ -2442,7 +2442,7 @@ do ip=1,npart
     x=xm+sx*randu01(); y=ym+sy*randu01() !; z=zm+sz*randu01()
     kx=ifix(x/dx); ky=ifix(y/dy) !; kz=ifix(z/dz)
 ! determine kz and z from recharge array
-    if(rech(kx+1,ky+1)%flow.gt.0.0)exit ! when we have found a positive flow region      
+    if(rech(kx+1,ky+1)%flow.gt.0.0)exit ! when we have found a positive flow region
   enddo
   k=rech(kx+1,ky+1)%k
   if(irevz.eq.1)then
@@ -2456,11 +2456,11 @@ do ip=1,npart
 enddo
 return
 end
-!------------------------------------------------------------------      
+!------------------------------------------------------------------
 ! placerch2
 !------------------------------------------------------------------
 subroutine placerch2(time,i,j,pat,cat,rech,npart,pmass,iptype)
-! place npart particles uniformly in a cell i,j,k with k determined 
+! place npart particles uniformly in a cell i,j,k with k determined
 ! from the recharge array
 use global
 implicit none
@@ -2504,7 +2504,7 @@ type (boundary):: bounds(*)
 integer:: iflag,ip,kx,ky,kz
 integer:: ip0,ipn,i,j,k,io,jo,ko
 real:: por(*),ret(*)
-real:: dlong(*),dtran(*),ddiff(*),decay(nzone) ! included for consistent input to all movep subroutines 
+real:: dlong(*),dtran(*),ddiff(*),decay(nzone) ! included for consistent input to all movep subroutines
 real:: vel3(3,0:nx,0:ny,0:nz)
 real:: dtcurrent,dtmin
 double precision:: timeleft,totaltime
@@ -2518,10 +2518,10 @@ do ip=ip0,ipn
   totaltime=0.0
   do; if(.not.sngl(timeleft).gt.0.0)exit
 !...particle location
-    x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3) 
+    x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3)
 !
-    i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3) 
-    io=pat(ip)%ijk(1); jo=pat(ip)%ijk(2); ko=pat(ip)%ijk(3) 
+    i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3)
+    io=pat(ip)%ijk(1); jo=pat(ip)%ijk(2); ko=pat(ip)%ijk(3)
     kx=i-1; ky=j-1; kz=k-1
 !...parameters
     th4=por(cat(i,j,k)%zone)
@@ -2547,7 +2547,7 @@ do ip=ip0,ipn
 !...reflect particles at boundaries as needed or tag to remove
     call reflect(sngl(timeleft),pat,cat,x,y,z,ip)
     if(.not.pat(ip)%active)exit
-!...stream returns new cell location, 
+!...stream returns new cell location,
 !...compute new cell location only if reflected
     if(x.ne.xold.or.y.ne.yold.or.z.ne.zold)then
       kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
@@ -2564,7 +2564,7 @@ do ip=ip0,ipn
   enddo
 enddo
 return
-end   
+end
 !------------------------------------------------------------
 ! movep2
 !------------------------------------------------------------
@@ -2590,20 +2590,20 @@ real:: xstream,ystream,zstream
 !
 do ip=ip0,ipn
   if(.not.pat(ip)%active)cycle
-        
+
 !
   timeleft=dble(dtcurrent)
   totaltime=0.0d+0
   do; if(.not.sngl(timeleft).gt.0.0)exit
     call random(w1,w2,w3)
 !...particle location
-    x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3) 
-    xo=pat(ip)%xyz(1); yo=pat(ip)%xyz(2); zo=pat(ip)%xyz(3) 
+    x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3)
+    xo=pat(ip)%xyz(1); yo=pat(ip)%xyz(2); zo=pat(ip)%xyz(3)
 !
-    i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3) 
-    io=pat(ip)%ijk(1); jo=pat(ip)%ijk(2); ko=pat(ip)%ijk(3) 
+    i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3)
+    io=pat(ip)%ijk(1); jo=pat(ip)%ijk(2); ko=pat(ip)%ijk(3)
     kx=i-1; ky=j-1; kz=k-1
-!...interpolate velocity          
+!...interpolate velocity
     vx4=vel3(1,kx,j,k)+(vel3(1,i,j,k)-vel3(1,kx,j,k))*(x/dx-float(kx))
     vy4=vel3(2,i,ky,k)+(vel3(2,i,j,k)-vel3(2,i,ky,k))*(y/dy-float(ky))
     vz4=vel3(3,i,j,kz)+(vel3(3,i,j,k)-vel3(3,i,j,kz))*(z/dz-float(kz))
@@ -2620,7 +2620,7 @@ do ip=ip0,ipn
       ii=mx*(mod(ifix(x/dx2),2)-min(kx,1))
       jj=my*(mod(ifix(y/dy2),2)-min(ky,1))
       kk=mz*(mod(ifix(z/dz2),2)-min(kz,1))
-      dtmin=min(large,cat(i+ii,j+jj,k+kk)%tc,sngl(timeleft)) 
+      dtmin=min(large,cat(i+ii,j+jj,k+kk)%tc,sngl(timeleft))
     else
       dtmin=dtcurrent
     endif
@@ -2636,9 +2636,9 @@ do ip=ip0,ipn
     yt=pat(ip)%xyz(2)+my*ratv4dr2dt*w2
     zt=pat(ip)%xyz(3)+mz*ratv4dr2dt*w3
 !...reflect particles at boundaries as needed or tag to remove
-    call reflect(sngl(timeleft),pat,cat,xt,yt,zt,ip)     
+    call reflect(sngl(timeleft),pat,cat,xt,yt,zt,ip)
     if(.not.pat(ip)%active)exit
-!...compute new cell location from xt,yt,zt 
+!...compute new cell location from xt,yt,zt
     kxt=ifix(xt/dx); kyt=ifix(yt/dy); kzt=ifix(zt/dz)
     it=kxt+1; jt=kyt+1; kt=kzt+1
 !...interpolate velocity
@@ -2666,7 +2666,7 @@ do ip=ip0,ipn
     kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
     i=kx+1; j=ky+1; k=kz+1
     xd=x-xo;yd=y-yo;zd=z-zo
-!    if(dtmin.lt.near)then   
+!    if(dtmin.lt.near)then
     if(sqrt(xd*xd+yd*yd+zd*zd).lt.near)then
       xm=kx*dx; ym=ky*dy; zm=kz*dz; xp=xm+dx; yp=ym+dy; zp=zm+dz
       call icell_correct(kx,ky,kz,i,j,k,x,y,z,xm,ym,zm,xp,yp,zp,vel3)
@@ -2680,7 +2680,7 @@ do ip=ip0,ipn
   enddo
 enddo
 return
-end   
+end
 !------------------------------------------------------------
 ! movep3
 !------------------------------------------------------------
@@ -2730,11 +2730,11 @@ do ip=ip0,ipn
   do; if(.not.sngl(timeleft).gt.0.0)exit
     call random(w1,w2,w3)
 !...particle location
-    x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3) 
-    xo=pat(ip)%xyz(1); yo=pat(ip)%xyz(2); zo=pat(ip)%xyz(3) 
+    x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3)
+    xo=pat(ip)%xyz(1); yo=pat(ip)%xyz(2); zo=pat(ip)%xyz(3)
 !
-    i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3) 
-    io=pat(ip)%ijk(1); jo=pat(ip)%ijk(2); ko=pat(ip)%ijk(3) 
+    i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3)
+    io=pat(ip)%ijk(1); jo=pat(ip)%ijk(2); ko=pat(ip)%ijk(3)
     kx=i-1; ky=j-1; kz=k-1
 !...bilinearly interpolate on cells centered on the corners of the grid blocks
 !
@@ -2752,9 +2752,9 @@ do ip=ip0,ipn
       kmmkk=kmm-kk; jmmjj=jmm-jj; immii=imm-ii
       th(ith)=por(cat(imm,jmm,kmm)%zone)
       rt(ith)=ret(cat(imm,jmm,kmm)%zone)
-      vx(ith)=vel3(1,immii,jmm,kmm)/por(cat(i,jmm,kmm)%zone) 
-      vy(ith)=vel3(2,imm,jmmjj,kmm)/por(cat(imm,j,kmm)%zone) 
-      vz(ith)=vel3(3,imm,jmm,kmmkk)/por(cat(imm,jmm,k)%zone) 
+      vx(ith)=vel3(1,immii,jmm,kmm)/por(cat(i,jmm,kmm)%zone)
+      vy(ith)=vel3(2,imm,jmmjj,kmm)/por(cat(imm,j,kmm)%zone)
+      vz(ith)=vel3(3,imm,jmm,kmmkk)/por(cat(imm,jmm,k)%zone)
       ith=ith+1
     enddo; enddo; enddo
 !...location of lower faces of the cell over which interolation occurs
@@ -2783,7 +2783,7 @@ do ip=ip0,ipn
     t5=fzfy1*th(6)+fzfy*th(8)+fz1fy1*th(2)+fz1fy*th(4) !+x face
     t1=fyfx1*th(3)+fyfx*th(4)+fy1fx1*th(1)+fy1fx*th(2) !-z face
     t7=fyfx1*th(7)+fyfx*th(8)+fy1fx1*th(5)+fy1fx*th(6) !+z face
-    thi=fz1*t1+fz*t7 
+    thi=fz1*t1+fz*t7
     dxth=(t5-t3)/dx; dyth=(t6-t2)/dy; dzth=(t7-t1)/dz
     th4=por(cat(i,j,k)%zone) ! porosity in current cell
 !...get eight retardation coefficients
@@ -2793,7 +2793,7 @@ do ip=ip0,ipn
     r5=fzfy1*rt(6)+fzfy*rt(8)+fz1fy1*rt(2)+fz1fy*rt(4) !+x face
     r1=fyfx1*rt(3)+fyfx*rt(4)+fy1fx1*rt(1)+fy1fx*rt(2) !-z face
     r7=fyfx1*rt(7)+fyfx*rt(8)+fy1fx1*rt(5)+fy1fx*rt(6) !+z face
-    reti=fz1*r1+fz*r7    ! retardation coef. at particle location 
+    reti=fz1*r1+fz*r7    ! retardation coef. at particle location
     ret4=ret(cat(i,j,k)%zone) ! ret in current cell
 !
     retth=ret4*th4
@@ -2841,10 +2841,10 @@ do ip=ip0,ipn
       dyy=at*(vx4*(vx6-vx2)/dy+vy4*(vy6-vy2)/dy+vz4*(vz6-vz2)/dy)/v4
       dzz=at*(vx4*(vx7-vx1)/dz+vy4*(vy7-vy1)/dz+vz4*(vz7-vz1)/dz)/v4
 !.....gradient drift term
-!.....We need (1/(R theta)) grad(D theta)= 
+!.....We need (1/(R theta)) grad(D theta)=
 !.....D grad (theta)/(R theta) + grad D/R
 !.....grad theta term, (Dij/(R*theta)) gradj (theta)
-      adx=dxx+(diffatv4*dxth)/thi   
+      adx=dxx+(diffatv4*dxth)/thi
       ady=dyy+(diffatv4*dyth)/thi
       adz=dzz+(diffatv4*dzth)/thi
     endif
@@ -2904,10 +2904,10 @@ do ip=ip0,ipn
     kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
     i=kx+1; j=ky+1; k=kz+1
     xd=x-xo;yd=y-yo;zd=z-zo
-!    if(dtmin.lt.near)then   
+!    if(dtmin.lt.near)then
     if(sqrt(xd*xd+yd*yd+zd*zd).lt.near)then
       xm=kx*dx; ym=ky*dy; zm=kz*dz; xp=xm+dx; yp=ym+dy; zp=zm+dz
-!...correct cell location for odd case where particle lands on cell boundary          
+!...correct cell location for odd case where particle lands on cell boundary
       call icell_correct(kx,ky,kz,i,j,k,x,y,z,xm,ym,zm,xp,yp,zp,vel3)
     endif
 !...absorbing boundaries
@@ -2919,7 +2919,7 @@ do ip=ip0,ipn
   enddo
 enddo
 return
-end   
+end
 !------------------------------------------------------------
 ! movep4
 !------------------------------------------------------------
@@ -2953,7 +2953,7 @@ dlong,dtran,ddiff,decay,pat,cat,bounds)
 !               -------|------------|------------|------
 !              |             |      |     |      |      |
 !              |             |            |             |
-!              |             |            |             |   
+!              |             |            |             |
 !              |             -            -             |
 !              |             |            |             |
 !              |             |            |             |
@@ -3013,11 +3013,11 @@ do ip=ip0,ipn
   do; if(.not.sngl(timeleft).gt.0.0)exit
     call random(w1,w2,w3)
 !...particle location
-    x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3) 
-    xo=pat(ip)%xyz(1); yo=pat(ip)%xyz(2); zo=pat(ip)%xyz(3) 
+    x=pat(ip)%xyz(1); y=pat(ip)%xyz(2); z=pat(ip)%xyz(3)
+    xo=pat(ip)%xyz(1); yo=pat(ip)%xyz(2); zo=pat(ip)%xyz(3)
 !
-    i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3) 
-    io=pat(ip)%ijk(1); jo=pat(ip)%ijk(2); ko=pat(ip)%ijk(3) 
+    i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3)
+    io=pat(ip)%ijk(1); jo=pat(ip)%ijk(2); ko=pat(ip)%ijk(3)
     kx=i-1; ky=j-1; kz=k-1
 !...bilinearly interpolate on cells centered on the corners of the grid blocks
 !
@@ -3033,9 +3033,9 @@ do ip=ip0,ipn
       kmmkk=kmm-kk; jmmjj=jmm-jj; immii=imm-ii
       th(ith)=por(cat(imm,jmm,kmm)%zone)
       rt(ith)=ret(cat(imm,jmm,kmm)%zone)
-      vx(ith)=vel3(1,immii,jmm,kmm)/por(cat(i,jmm,kmm)%zone) 
-      vy(ith)=vel3(2,imm,jmmjj,kmm)/por(cat(imm,j,kmm)%zone) 
-      vz(ith)=vel3(3,imm,jmm,kmmkk)/por(cat(imm,jmm,k)%zone) 
+      vx(ith)=vel3(1,immii,jmm,kmm)/por(cat(i,jmm,kmm)%zone)
+      vy(ith)=vel3(2,imm,jmmjj,kmm)/por(cat(imm,j,kmm)%zone)
+      vz(ith)=vel3(3,imm,jmm,kmmkk)/por(cat(imm,jmm,k)%zone)
       ith=ith+1
     enddo; enddo; enddo
 !.........location of lower faces of the cell over which interolation occurs
@@ -3064,7 +3064,7 @@ do ip=ip0,ipn
     t5=fzfy1*th(6)+fzfy*th(8)+fz1fy1*th(2)+fz1fy*th(4) !+x face
     t1=fyfx1*th(3)+fyfx*th(4)+fy1fx1*th(1)+fy1fx*th(2) !-z face
     t7=fyfx1*th(7)+fyfx*th(8)+fy1fx1*th(5)+fy1fx*th(6) !+z face
-    thi=fz1*t1+fz*t7 
+    thi=fz1*t1+fz*t7
     dxth=(t5-t3)/dx; dyth=(t6-t2)/dy; dzth=(t7-t1)/dz
     th4=por(cat(i,j,k)%zone) ! porosity in current cell
 !...get eight retardation coefficients
@@ -3074,7 +3074,7 @@ do ip=ip0,ipn
     r5=fzfy1*rt(6)+fzfy*rt(8)+fz1fy1*rt(2)+fz1fy*rt(4) !+x face
     r1=fyfx1*rt(3)+fyfx*rt(4)+fy1fx1*rt(1)+fy1fx*rt(2) !-z face
     r7=fyfx1*rt(7)+fyfx*rt(8)+fy1fx1*rt(5)+fy1fx*rt(6) !+z face
-    reti=fz1*r1+fz*r7    ! retardation coef. at particle location 
+    reti=fz1*r1+fz*r7    ! retardation coef. at particle location
     ret4=ret(cat(i,j,k)%zone) ! ret in current cell
 !
     retth=ret4*th4
@@ -3108,9 +3108,9 @@ do ip=ip0,ipn
 !...interpolated vel
     vz4=fz1n*vz1+fzn*vz7
 !...dispersive-diffusive step w/ symmetric square root
-    vxx=vx4*vx4; vyy=vy4*vy4; vzz=vz4*vz4 
+    vxx=vx4*vx4; vyy=vy4*vy4; vzz=vz4*vz4
     vv4=vxx+vyy+vzz
-    v4=sqrt(vv4)  
+    v4=sqrt(vv4)
     vxy=vx4*vy4; vxz=vx4*vz4; vyz=vy4*vz4
     e1=sqrt(al*v4+diff); e2=sqrt(at*v4+diff)
     if(vv4.lt.100.0*near)then
@@ -3137,7 +3137,7 @@ do ip=ip0,ipn
       dispx=b11*w1+b12*w2+b13*w3; dispy=b12*w1+b22*w2+b23*w3; dispz=b13*w1+b23*w2+b33*w3
       dispxt=b11+b12+b13; dispyt=b12+b22+b23; dispzt=b13+b23+b33
 !.....gradient advective step (bilinear interpolation)
-      dxvx=(vx5-vx3)/dx; dyvx=(vx6-vx2)/dy; dzvx=(vx7-vx1)/dz 
+      dxvx=(vx5-vx3)/dx; dyvx=(vx6-vx2)/dy; dzvx=(vx7-vx1)/dz
       dxvy=(vy5-vy3)/dx; dyvy=(vy6-vy2)/dy; dzvy=(vy7-vy1)/dz
       dxvz=(vz5-vz3)/dx; dyvz=(vz6-vz2)/dy; dzvz=(vz7-vz1)/dz
 !.....vv4 = v4*v4, dj(vv4)/v4 = dj(sumi(vi*vi))/v4 = 2vidjvi/v4
@@ -3145,8 +3145,8 @@ do ip=ip0,ipn
       vy4dxvy=vy4*dxvy; vy4dyvy=vy4*dyvy; vy4dzvy=vy4*dzvy
       vz4dxvz=vz4*dxvz; vz4dyvz=vz4*dyvz; vz4dzvz=vz4*dzvz
       v42=v4/2.0
-      dxvv4=(vx4dxvx+vy4dxvy+vz4dxvz)/v42 
-      dyvv4=(vx4dyvx+vy4dyvy+vz4dyvz)/v42 
+      dxvv4=(vx4dxvx+vy4dxvy+vz4dxvz)/v42
+      dyvv4=(vx4dyvx+vy4dyvy+vz4dyvz)/v42
       dzvv4=(vx4dzvx+vy4dzvy+vz4dzvz)/v42
 !.....derivative of D =  dj(Dij) = dj(alt(vivj/v4)+at*v4I)
 !.....=(alt/v4)(vjdj(vi)+vidj(vj))-.5*(alt)vivj(vv4**-3/2)dj(vv4)+
@@ -3154,7 +3154,7 @@ do ip=ip0,ipn
 !.....=(alt/v4)(vjdj(vi)+vidj(vj))-.5*(alt)vivj(1/vv4)djvv4/v4+
 !.....0.5*at*divv4/v4
 !
-!.....We need (1/(R theta)) grad(D theta)= 
+!.....We need (1/(R theta)) grad(D theta)=
 !.....D grad (theta)/(R theta) + grad D/R
       altv4=alt/v4
       dxvv4v4=.5*dxvv4/v4; dyvv4v4=.5*dyvv4/v4; dzvv4v4=.5*dzvv4/v4
@@ -3167,7 +3167,7 @@ do ip=ip0,ipn
       dyx=altv4*(vx4*dxvy+vy4*dxvx-vxy*dxvv4v4)
       dyy=altv4*(vy4dyvy+vy4dyvy-vyy*dyvv4v4)+at2*dyvv4
       dyz=altv4*(vz4*dzvy+vy4*dzvz-vyz*dzvv4v4)
-!                                                                       
+!
       dzx=altv4*(vx4*dxvz+vz4*dxvx-vxz*dxvv4v4)
       dzy=altv4*(vy4*dyvz+vz4*dyvy-vyz*dyvv4v4)
       dzz=altv4*(vz4dzvz+vz4dzvz-vzz*dzvv4v4)+at2*dzvv4
@@ -3217,7 +3217,7 @@ do ip=ip0,ipn
       write(ibugout,*)'dD31/dx,dD32/dy,dD33/dz ',dzx,dzy,dzz
     endif
 !...time-step control
-    if(dtcntrl.ne.0.0)then 
+    if(dtcntrl.ne.0.0)then
       ii=mx*(ii-min(kx,1))
       jj=my*(jj-min(ky,1))
       kk=mz*(kk-min(kz,1))
@@ -3244,10 +3244,10 @@ do ip=ip0,ipn
     kx=ifix(x/dx); ky=ifix(y/dy); kz=ifix(z/dz)
     i=kx+1; j=ky+1; k=kz+1
     xd=x-xo;yd=y-yo;zd=z-zo
-!    if(dtmin.lt.near)then   
+!    if(dtmin.lt.near)then
     if(sqrt(xd*xd+yd*yd+zd*zd).lt.near)then
       xm=kx*dx; ym=ky*dy; zm=kz*dz; xp=xm+dx; yp=ym+dy; zp=zm+dz
-!.....correct cell location for odd case where particle lands on cell boundary          
+!.....correct cell location for odd case where particle lands on cell boundary
       call icell_correct(kx,ky,kz,i,j,k,x,y,z,xm,ym,zm,xp,yp,zp,vel3)
     endif
 !...absorbing boundaries
@@ -3259,14 +3259,14 @@ do ip=ip0,ipn
   enddo
 enddo
 return
-end   
+end
 !------------------------------------------------------------
 ! tcntrl
 !------------------------------------------------------------
 subroutine tcntrl(vel3,por,ret,dtran,dlong,ddiff,cat)
 !
 ! Develop a static time-step control as a real number cell attribute
-! based on the maximum dispersive displacement. 
+! based on the maximum dispersive displacement.
 use global
 type (cell)::     cat(nx,ny,nz)
 real:: por(nzone),ret(nzone),dtran(nzone),dlong(nzone),ddiff(nzone)
@@ -3280,8 +3280,8 @@ kmin=0
 cat(:,:,:)%tc=dtinit
 do k=1,nz; do j=1,ny; do i=1,nx
 !.......get all 12 component velocities near corner of cells
-! e.g., x-diection i-1,j,k; i,j,k; i+1,j,k  
-!                  i-1,j+1,k; i,j+1,k; i+1,j+1,k  
+! e.g., x-diection i-1,j,k; i,j,k; i+1,j,k
+!                  i-1,j+1,k; i,j+1,k; i+1,j+1,k
 !                  i-1,j+1,k+1; i,j+1,k+1; i+1,j+1,k+1
 !                  i-1,j+1,k+1; i,j+1,k+1; i+1,j+1,k+1
   im=1; ip=1
@@ -3294,21 +3294,21 @@ do k=1,nz; do j=1,ny; do i=1,nx
   diffxyz=0.0
 !.find max representative dispersion coefficient
   do kk=0,kp*mz; do jj=0,jp*my; do ii=0,ip*mx
-    th=por(cat(i+ii,j+jj,k+kk)%zone)         
-    diff=ddiff(cat(i+ii,j+jj,k+kk)%zone)         
+    th=por(cat(i+ii,j+jj,k+kk)%zone)
+    diff=ddiff(cat(i+ii,j+jj,k+kk)%zone)
     at=dtran(cat(i+ii,j+jj,k+kk)%zone)
     al=dlong(cat(i+ii,j+jj,k+kk)%zone)
     r=ret(cat(i+ii,j+jj,k+kk)%zone)
-!...average to cell centers 
+!...average to cell centers
     vx=(vel3(1,i-mx*im+ii,j      +jj,k      +kk)+&
         vel3(1,i      +ii,j      +jj,k      +kk))/2.0
     vy=(vel3(2,i      +ii,j-my*jm+jj,k      +kk)+&
         vel3(2,i      +ii,j      +jj,k      +kk))/2.0
     vz=(vel3(3,i      +ii,j      +jj,k-mz*km+kk)+&
         vel3(3,i      +ii,j      +jj,k      +kk))/2.0
-!...magnitude 
+!...magnitude
     v4=sqrt(vx**2+vy**2+vz**2)
-!...compute representative dispersion coefficient 
+!...compute representative dispersion coefficient
     diffxyz=max(diffxyz,(max(at,al)/r)*v4+diff*th/r)
   enddo; enddo; enddo
 ! minimum cell size
@@ -3325,12 +3325,12 @@ do k=1,nz; do j=1,ny; do i=1,nx
     dtmaximum=max(dtcntrl*rmindxyz2/(48.0*diffxyz),dtmaximum)
   endif
 enddo; enddo; enddo
-write(*,'(4(a,e10.5))')'CURTIME:',sngl(curtime),' DTINIT =',dtinit,' DTMINIMUM =',dtminimum ,' DTMAXIMUM =',dtmaximum 
+write(*,'(4(a,e10.5))')'CURTIME:',sngl(curtime),' DTINIT =',dtinit,' DTMINIMUM =',dtminimum ,' DTMAXIMUM =',dtmaximum
 write(*,'((a,3i10))')'I,J,K LOCATION OF MINIMUM = ',imin,jmin,kmin
-write(iout,'(4(a,e10.5))')'CURTIME:',sngl(curtime),' DTINIT =',dtinit,' DTMINIMUM =',dtminimum ,' DTMAXIMUM =',dtmaximum 
+write(iout,'(4(a,e10.5))')'CURTIME:',sngl(curtime),' DTINIT =',dtinit,' DTMINIMUM =',dtminimum ,' DTMAXIMUM =',dtmaximum
 write(iout,'((a,3i10))')'I,J,K LOCATION OF MINIMUM = ',imin,jmin,kmin
 return
-end               
+end
 !------------------------------------------------------------
 ! courant
 !------------------------------------------------------------
@@ -3343,7 +3343,7 @@ type (boundary):: bounds(1:maxbnd)
 integer:: source(maxsource),ibounds,itype,kx,ky,kz,isource
 integer:: i,j,k,im,jm,km,ii,jj,kk,l4,kbot,ktop
 real:: vel3(3,0:nx,0:ny,0:nz),por(nzone),th4,tc
-real:: tc1,tc2,tc3,tc4,tc5,tc6,tc7,tc8,vxm,vym,vzm,vxp,vyp,vzp      
+real:: tc1,tc2,tc3,tc4,tc5,tc6,tc7,tc8,vxm,vym,vzm,vxp,vyp,vzp
 !
 do isource=1,nsource
   ibounds=source(isource)
@@ -3365,7 +3365,7 @@ do isource=1,nsource
       if(max(abs(vel3(3,i,j,kz)),abs(vel3(3,i,j,k))).ne.0.0)&
       bounds(ibounds)%dt_type1=min(bounds(ibounds)%dt_type1,th4*rmz*dz2/&
       max(abs(vel3(3,i,j,kz)),abs(vel3(3,i,j,k))))
-!...neighboring time step control for constant conc. cell 
+!...neighboring time step control for constant conc. cell
       im=0; jm=0; km=0
       if(i.ne.1)im=1; if(j.ne.1)jm=1; if(k.ne.1)km=1
       do ii=0,mx; do jj=0,my; do kk=0,mz
@@ -3375,7 +3375,7 @@ do isource=1,nsource
       if(iadvect.ne.1)bounds(ibounds)%dt_type1=min(bounds(ibounds)%dt_type1,tc)
     enddo
 !...finally, allow user to control the time step through refresh
-    bounds(ibounds)%dt_type1=bounds(ibounds)%dt_type1*bounds(ibounds)%refresh     
+    bounds(ibounds)%dt_type1=bounds(ibounds)%dt_type1*bounds(ibounds)%refresh
   endif
 enddo
 return
@@ -3387,7 +3387,7 @@ subroutine split(pat,cat,bounds,por,ret)
 ! split particles to achieve a specifed mass resolution
 ! Two controls:   cres:  minimum concentration of interest
 !                 nres:  minimum particle resolution within cell
-!  
+!
 use global
 implicit none
 type (particle):: pat(maxnp)
@@ -3404,7 +3404,7 @@ do ip=1,np
   pmass_old=pat(ip)%pmass
   i=pat(ip)%ijk(1); j=pat(ip)%ijk(2); k=pat(ip)%ijk(3)
 ! don't split particles with mass less than pmass_min:
-  pmass_min=cres*por(cat(i,j,k)%zone)*ret(cat(i,j,k)%zone)*vol/float(nres)   
+  pmass_min=cres*por(cat(i,j,k)%zone)*ret(cat(i,j,k)%zone)*vol/float(nres)
 ! old  if(pmass_old.ge.pmass_min)then                            ! particles with pmass > pmass_min
    if(maxval(pmass_old-pmass_min).gt.0.0)then                    ! DAB particles with ALL pmass > pmass_min
     cmass=cat(i,j,k)%cmass                                          ! mass in cell
@@ -3417,7 +3417,7 @@ do ip=1,np
       if(itype.ne.3)then                               ! particles outside of absorbing boundary type 3
 !........force all particles to a mass resolution (pmass/cmass) of at least 1/nres
 ! DAB using maxval in case all mass turns to one species (don't force split):
-        ip_res=nint(maxval(cat(i,j,k)%cmass/pmass_old)) 
+        ip_res=nint(maxval(cat(i,j,k)%cmass/pmass_old))
         if(ip_res.lt.nres)then
 !.........split particle into enough equal parts to force the above condition false
           nsplit=nres/ip_res+1
@@ -3429,7 +3429,7 @@ do ip=1,np
           ds=pat(ip)%ds/dble(nsplit)
           do isplit=1,nsplit-1
             call addp(time,x,y,z,i,j,k,pmass,pat,cat,ds)
-!...........assign birth date for split particle to that of parent                    
+!...........assign birth date for split particle to that of parent
             pat(np)%birth_day=pat(ip)%birth_day
           enddo
           netsplit=netsplit+nsplit-1
@@ -3450,7 +3450,7 @@ subroutine stream(vel3,x,y,z,retth,kx,ky,kz,i,j,k,dtmin,xstream,ystream,zstream)
 !
 ! user enters computes particle location (xstream, ystream, and zstream) and time to edge
 ! dtmin (if particle reaches edge in specified dtmin as input), new locations along the stream
-! line a time step tstep away from x,y,z where tstep is constrained by 
+! line a time step tstep away from x,y,z where tstep is constrained by
 ! the time to the edge of the cell
 !
 !
@@ -3467,10 +3467,10 @@ subroutine stream(vel3,x,y,z,retth,kx,ky,kz,i,j,k,dtmin,xstream,ystream,zstream)
 !       dtmin   - min(time to edge of cell, dtmin)
 !       i,j,k   - new cell indices if particle reaches cell boundary
 !       kx,ky,kz- new cell indices if particle reaches cell boundary
-!       
+!
 !
 ! MODFIED: 10/27/01 ELB
-!   
+!
 use global
 implicit none
 integer:: kx,ky,kz,ixend,iyend,izend,ix,iy,iz,i,j,k
@@ -3553,7 +3553,7 @@ double precision:: sx,tstep,dxstream,xyzstream2
 intent(in):: xxm,dx,xm,xp,kx,nx,vxm,vxp,idir
 intent(out):: dxstream,sx
 intent(inout):: tstep,ixend,ix,x
-sx=(vxp-vxm)/dx      
+sx=(vxp-vxm)/dx
 ! compute location
 dxstream=xyzstream2(x,xm,xxm,vxm,tstep,sx)
 ! if particle hit edge, compute time to edge
@@ -3561,8 +3561,8 @@ if(dxstream.gt.xp.and.vxp.gt.0.0)then
   ixend=1
   dxstream=xp
 ! In computing ix, don't let it leave the active grid.
-! If it wants to leave, on the next round through it will start from the edge 
-! and dtmin will be zero. In this case, icell_correct will bump the particle 
+! If it wants to leave, on the next round through it will start from the edge
+! and dtmin will be zero. In this case, icell_correct will bump the particle
 ! outside of the domain, where it is either absorbed or reflected.
   if(kx+1.ne.nx)ix=1
   if(sx.ne.0.0)then
@@ -3591,7 +3591,7 @@ double precision:: dxstream,vxmsx
 !
 if(sx.ne.0.0)then
 ! the following is hard wired to limit the maximum value of tstep*sx.
-! If tstep*sx is too large, dexp(sx*step) cannot be evaluated. 
+! If tstep*sx is too large, dexp(sx*step) cannot be evaluated.
 ! These routines will still function is we change tstep here to a reasonable value.
   tstep=min(tstep,600.0d+00/dabs(sx))
   vxmsx=vxm/sx
@@ -3653,7 +3653,7 @@ real:: pert,divflux,divmax,fluxmax,vx,vy,vz,totalt,hdiff,f,f1,f2,f3, &
         divmaxavgf, divcell, olddiv, divinc, divinc2, ctot,d1,d2,d3
 logical flexist
 data vfile,vfileo,kpero,kstpo,irecharge,ichd/' ',' ',0,0,0,0/
-save 
+save
 !.....strings identifying x,y ad z component fluxes in MODFLOW cell-by-cell flow file
 textx='FLOW RIGHT FACE'; texty='FLOW FRONT FACE'; textz='FLOW LOWER FACE';textr='        RECHARGE'
 textc='   CONSTANT HEAD'
@@ -3682,7 +3682,7 @@ if(ivtype.lt.0)then
   vfile_type='unformatted'
 endif
 !
-if(tnextvel.eq.tmax)tnextvel=dble(large)             
+if(tnextvel.eq.tmax)tnextvel=dble(large)
 !
 if(iabs(ivtype).eq.2)then
 !.compute velocities from heads
@@ -3746,13 +3746,13 @@ if(kper.lt.kpero.or.vfileo.ne.vfile.or.((kper.eq.kpero).and.(kstp.le.kstpo)))the
   if(iabs(ivtype).ne.2)then  ! if flux file
     if(.not.allocated(temp))allocate (temp(1:nx,1:ny,1:nz),STAT = ierror)
     i=0
-    do 
+    do
       call readcbc(iout,invel,nx,ny,nz,kstpin,text,kperin,ncol,nrow,nlay,temp,iread_error)
       if(iread_error.eq.-1)then
         exit
       elseif(iread_error.eq.-2)then
         goto 9998
-      endif             
+      endif
       if(i.ne.0)then
         if(kstpino.ne.kstpin)exit
         if(kperino.ne.kperin)exit
@@ -3785,7 +3785,7 @@ if(kper.lt.kpero.or.vfileo.ne.vfile.or.((kper.eq.kpero).and.(kstp.le.kstpo)))the
       write(iout,*)' Found chd fluxes in cbc file'
       checkc=1 ! don't check to make sure chd is read
     endif
-  endif        
+  endif
 endif
 vfileo=vfile
 kpero=kper
@@ -3805,7 +3805,7 @@ if(iabs(ivtype).eq.2)then
      exit
    elseif(iread_error.eq.-2)then
      goto 9998
-   endif             
+   endif
    if(.not.allocated(head))allocate (head(nx,ny,nz))
    write(*,1002)iz,nx,ny,kstp,kper,char(13)
    1002   format('Reading layer ',i3,' NCOL =',I3,' NROW =',I3,&
@@ -3815,7 +3815,7 @@ if(iabs(ivtype).eq.2)then
      exit
    elseif(iread_error.eq.-2)then
      goto 9998
-   endif             
+   endif
   enddo
 endif
 idir=1
@@ -3827,7 +3827,7 @@ do
       exit
     elseif(iread_error.eq.-2)then
       goto 9998
-    endif             
+    endif
   else
 !...compute fluxes from heads
     if(idir.eq.1)then
@@ -3956,7 +3956,7 @@ do
   endif
   idir=idir+1
   if((checkx.eq.0.and.mx.eq.1).or.(checky.eq.0.and.my.eq.1).or.(checkz.eq.0.and.mz.eq.1).or.&
-     (irecharge.eq.1.and.mz.eq.1.and.checkr.eq.0).or.(ichd.eq.1.and.checkc.eq.0))then     
+     (irecharge.eq.1.and.mz.eq.1.and.checkr.eq.0).or.(ichd.eq.1.and.checkc.eq.0))then
      cycle
   else
      exit
@@ -3971,11 +3971,11 @@ endif
 deallocate(temp)
 !......compute divergence
 if(ibug.ge.1)then
-  write(ibugout,*)'             Divergence of the Flux'     
+  write(ibugout,*)'             Divergence of the Flux'
   write(ibugout,*)'        i          j          k         div'
-  maxfluxmax=0.0     
-  maxdivflux=0.0     
-  sumfluxmax=0.0     
+  maxfluxmax=0.0
+  maxdivflux=0.0
+  sumfluxmax=0.0
   divmaxcell=0.0
   nflux=0
   do k=1+mz,nz-mz; do j=1+my,ny-my; do i=1+mx,nx-mx
@@ -4015,7 +4015,7 @@ if(ibug.ge.1)then
 !.......convert flux to Darcy velocity
     vx=vel3(1,i,j,k)/ax; vy=vel3(2,i,j,k)/ay; vz=vel3(3,i,j,k)/az
 !.......set minimum velocities for anisotropic dispersion tensor
-    vel3(1,i,j,k)=vx; vel3(2,i,j,k)=vy; vel3(3,i,j,k)=vz 
+    vel3(1,i,j,k)=vx; vel3(2,i,j,k)=vy; vel3(3,i,j,k)=vz
   enddo; enddo; enddo
 !..adjust velocities for recharge
   if(irecharge.eq.1)then
@@ -4025,7 +4025,7 @@ if(ibug.ge.1)then
         do k=rech(i,j)%k,nz
           vel3(3,i,j,k)=vel3(3,i,j,k)-rech(i,j)%flow/az
         enddo
-      else    
+      else
         do k=1,rech(i,j)%k-1
           vel3(3,i,j,k)=vel3(3,i,j,k)+rech(i,j)%flow/az
         enddo
@@ -4135,7 +4135,7 @@ character (len=16) text
 real:: temp(nx,ny,nz),f,f1,f2,f3
 read(invel,iostat=iread_error)kstpin,kperin,text,ncol,nrow,nlay
 if(iread_error.lt.0)return
-! MODFLOW 2000 fix; may need further modification in some cases 
+! MODFLOW 2000 fix; may need further modification in some cases
 if(nlay.lt.0)then ! read additional data from MODFLOW 2000
   nlay=-nlay
   read(invel,iostat=iread_error) i,f1,f2,f3
@@ -4148,7 +4148,7 @@ if(ncol.ne.nx.or.nrow.ne.ny.or.nlay.ne.nz)then
   write(iout,2001)ncol,nrow,nlay
   stop
 endif
-! MODFLOW 2000 fix; may need further modification in some cases 
+! MODFLOW 2000 fix; may need further modification in some cases
 if(i.eq.2)then
   read(invel,iostat=iread_error)n
   if(iread_error.lt.0)return
@@ -4234,7 +4234,7 @@ do ibounds=1,nbounds
       nsource=nsource+1
       source(nsource)=ibounds
     endif
-!...find next time to update bounds 
+!...find next time to update bounds
     if(itype.gt.0.and.curtime.ge.tbeg.and.curtime.ne.tend)tnextbnd=min(tend,tnextbnd)
     if(itype.gt.0.and.curtime.lt.tbeg)tnextbnd=min(tbeg,tnextbnd)
   endif
@@ -4262,18 +4262,18 @@ itypeo=-9999
 do ibounds=1,nbounds
   itype=bounds(ibounds)%bc_type
   numbnd=bounds(ibounds)%group
-  if(ibounds.ne.1)then  
+  if(ibounds.ne.1)then
     if(numbnd.ne.numbndo.and.itypeo.eq.7)then
 !     assign fluxin and fluxout to all previous boundaries in this group
-      ibou=ibounds-1 
-      numb=bounds(ibou)%group 
+      ibou=ibounds-1
+      numb=bounds(ibou)%group
       do
         bounds(ibou)%fluxin=fluxin
         bounds(ibou)%fluxout=fluxout
         if(ibou.eq.1)exit
         ibou=ibou-1
         if(bounds(ibou)%group.ne.numb)exit
-      enddo       
+      enddo
 !     reinitialize fluxin and fluxout
       fluxin=0.0
       fluxout=0.0
@@ -4294,8 +4294,8 @@ do ibounds=1,nbounds
     enddo
     if(ibounds.eq.nbounds)then
 !     assign fluxin and fluxout to all previous boundaries in this group
-      ibou=ibounds 
-      numb=bounds(ibou)%group 
+      ibou=ibounds
+      numb=bounds(ibou)%group
       do
         bounds(ibou)%fluxin=fluxin
         bounds(ibou)%fluxout=fluxout
@@ -4304,10 +4304,10 @@ do ibounds=1,nbounds
         ibou=ibou-1
         if(ibou.le.1)exit
         if(bounds(ibou)%group.ne.numb)exit
-      enddo       
+      enddo
     endif
   endif
-  numbndo=numbnd  
+  numbndo=numbnd
   itypeo=itype
 enddo
 return
@@ -4351,7 +4351,7 @@ do isource=1,nsource
           sy=bounds(ibounds)%bc_xyzs(2)
           sz=bounds(ibounds)%bc_xyzs(3)
     iptype=0
-    call placeu(sngl(curtime),xm,ym,zm,sx,sy,sz, pat,cat,npart,pmass,iptype,ierr)          
+    call placeu(sngl(curtime),xm,ym,zm,sx,sy,sz, pat,cat,npart,pmass,iptype,ierr)
   endif
 enddo
 return
@@ -4379,10 +4379,10 @@ do ipntsrc=1,npntsrc
 
   call skip(inpnt)
   read(inpnt,*,err=9999)xmin,xmax,ymin,ymax,zmin,zmax,nppnt,ptype,&
-                        ds,nowspec,(pmassread(iloop),iloop=1,nowspec)  
+                        ds,nowspec,(pmassread(iloop),iloop=1,nowspec)
 
 !.check if particle is in domain
-  if(xmin.lt.0.0.or.xmax.gt.nx*dx.or.& 
+  if(xmin.lt.0.0.or.xmax.gt.nx*dx.or.&
      ymin.lt.0.0.or.ymax.gt.ny*dy.or.&
      zmin.lt.0.0.or.zmax.gt.nz*dz)goto 9998
 
@@ -4394,7 +4394,7 @@ do ipntsrc=1,npntsrc
             massbc(nbtype+1,iloop)=massbc(nbtype+1,iloop)+nppnt*pmass(iloop)
          enddo
 
-     else 
+     else
          allocate(pmass(inspec))
          pmass=pmassread(1:inspec)
          immass=immass+nppnt*pmass
@@ -4468,8 +4468,8 @@ integer opc(nopc),outunit(nopc+1),iread_error
 character (len=80) outfname(nopc),flname
 character (len=3) llopc(nopc)
 data iflag/1/
-if(iflag.eq.1)then 
-  do iopc=1,nopc 
+if(iflag.eq.1)then
+  do iopc=1,nopc
     call skip(inopc)
     read(inopc,'(a)',err=9999)outfname(iopc)
     if(iopc.eq.7)then
@@ -4480,7 +4480,7 @@ if(iflag.eq.1)then
       open(outunit(iopc+1),file=flname,status='unknown')
     elseif(iopc.eq.5)then
 !     prt file is unformatted
-      open(outunit(iopc),file=outfname(iopc),form='unformatted',status='unknown')      
+      open(outunit(iopc),file=outfname(iopc),form='unformatted',status='unknown')
     elseif(iopc.eq.2)then
 !     concentration file is unformatted
 !     DAB 10-2-17 Not any more!
@@ -4542,7 +4542,7 @@ end
 
 
 
-!------------------------------------------------------------------      
+!------------------------------------------------------------------
 ! placeu
 !------------------------------------------------------------------
 subroutine placeu(time,xm,ym,zm,sx,sy,sz,pat,cat,npart,pmass,iptype,ierr)
@@ -4569,7 +4569,7 @@ ds = dble(sx*sy*sz)/dble(npart)
 enddo
 return
 end
-!------------------------------------------------------------------      
+!------------------------------------------------------------------
 ! placeuf
 !------------------------------------------------------------------
 subroutine placeuf(time,xm,ym,zm,sx,sy,sz,pat,cat,vel3,npart,pmass,iptype)
@@ -4634,7 +4634,7 @@ end
 
 
 !---------------------------------------------------------------------
-! output 
+! output
 !---------------------------------------------------------------------
 subroutine output(opc,outunit,outfname,sam,pat,cat,vel3,bounds,por,ret,decay)
 use global
@@ -4647,10 +4647,10 @@ real vel3(3,0:nx,0:ny,0:nz)
 integer opc(nopc),opcnow(nopc),outunit(nopc+1)
 character (len=80) outfname(nopc)
 double precision masstotal(nspec)
-! opc(1)      -MOMENTS                  
-! opc(2)      -CONCENTRATIONS           
-! opc(3)      -BREAKTHROUGH LOCATIONS  
-! opc(4)      -BREAKTHROUGH COUNTERS     
+! opc(1)      -MOMENTS
+! opc(2)      -CONCENTRATIONS
+! opc(3)      -BREAKTHROUGH LOCATIONS
+! opc(4)      -BREAKTHROUGH COUNTERS
 ! opc(5)      -PARTICLE LOCATIONS
 ! opc(6)      -INTERNAL BOUNDARY BREAKTHROUGH COUNTERS
 ! opc(8)      -SAMPLES
@@ -4700,8 +4700,8 @@ if(idecay.eq.1)then
   enddo
 endif
 write(iout,1000)sngl(curtime),(npbc(ibtype),ibtype=1,nbtype+1),&
-(netxyzm(idir),netxyzp(idir),idir=1,3),netsplit,nptotal,np 
- 
+(netxyzm(idir),netxyzp(idir),idir=1,3),netsplit,nptotal,np
+
 print*,opcnow
 
 do iloop=1,nspec
@@ -4791,10 +4791,10 @@ if(nran.ne.0)write(iout,1005)sngl(rm)/float(nran)
 return
 end
 !---------------------------------------------------------------------
-! ploti 
+! ploti
 !---------------------------------------------------------------------
 subroutine ploti(bounds,iunit,opc)
-!.....Report breakthrough for all internal boundary groups of the model. 
+!.....Report breakthrough for all internal boundary groups of the model.
 use global
 type (boundary):: bounds(1:maxbnd)
 integer:: opc(nopc)
@@ -4802,7 +4802,7 @@ double precision:: massin(nspec),maw(nspec)
 real:: fluxin,fluxout
 if(nbounds.eq.0)return
 !.....boundary type
-itypeo=bounds(1)%bc_type  
+itypeo=bounds(1)%bc_type
 !.....initial/previous boundary group number
 numbndo=bounds(1)%group
 !.....initialize counter for breathrough
@@ -4870,7 +4870,7 @@ do ibounds=1,nbounds
   numbndo=numbnd
   fluxino=fluxin; fluxouto=fluxout
   io=i;jo=j;ktopo=ktop;kboto=kbot
-  itypeo=itype         
+  itypeo=itype
 enddo
 !.write output for the last boundary
 if(iabs(itypeo).ne.7)then
@@ -4939,15 +4939,15 @@ end
 ! plotc
 !---------------------------------------------------------------------
 subroutine plotc(cat,iunit,opc,por,ret)
-! plot particle density and concentration 
+! plot particle density and concentration
 use global
 type (cell)::     cat(nx,ny,nz)
 integer opc(nopc)
 real:: por(nzone),ret(nzone)
 integer,allocatable:: ncell2(:)
-integer,allocatable:: ncell1(:),ncellt(:)                    
-real,allocatable:: cell2(:,:)  
-integer:: i,j,k,ijk                  
+integer,allocatable:: ncell1(:),ncellt(:)
+real,allocatable:: cell2(:,:)
+integer:: i,j,k,ijk
 data iflag/1/
 !.cell number and np file
 if(iflag.eq.1)then
@@ -4955,7 +4955,7 @@ if(iflag.eq.1)then
   write(iunit,*)nx,ny,nz,dx,dy,dz,nspec
   iflag=0
 endif
-ncl=0 
+ncl=0
 allocate (ncellt(1:nxyz), STAT = ierror)
 do i=1,nx; do j=1,ny; do k=1,nz
    if(cat(i,j,k)%np_cell.ne.0)then
@@ -4974,8 +4974,8 @@ do icl=1,ncl
   ijk=ncellt(icl)
   k=(ijk-1)/nxy+1
   j=(ijk-1-(k-1)*nxy)/nx+1
-  i= ijk-(k-1)*nxy-(j-1)*nx  
-  ncell1(n)=ijk  
+  i= ijk-(k-1)*nxy-(j-1)*nx
+  ncell1(n)=ijk
   if(opc(2).eq.1)ncell2(n)=cat(i,j,k)%np_cell
   do iloop=1,nspec
   if(opc(2).eq.2)cell2(n,iloop)=cat(i,j,k)%cmass(iloop)/dble(vol*por(cat(i,j,k)%zone)*ret(cat(i,j,k)%zone))
@@ -5002,15 +5002,15 @@ end
 ! plotsolid
 !---------------------------------------------------------------------
 subroutine plotsolid(cat,iunit,opc)
-! plot particle density and concentration 
+! plot particle density and concentration
 use global
 type (cell)::     cat(nx,ny,nz)
 integer opc(nopc)
 !real:: por(nzone),ret(nzone)
 integer,allocatable:: ncell2(:)
-integer,allocatable:: ncell1(:),ncellt(:)                    
-real,allocatable:: cell2(:,:)  
-integer:: i,j,k,ijk                  
+integer,allocatable:: ncell1(:),ncellt(:)
+real,allocatable:: cell2(:,:)
+integer:: i,j,k,ijk
 data iflag/1/
 !.cell number and np file
 if(iflag.eq.1)then
@@ -5018,7 +5018,7 @@ if(iflag.eq.1)then
   write(iunit,*)nx,ny,nz,dx,dy,dz,nspec
   iflag=0
 endif
-ncl=0 
+ncl=0
 allocate (ncellt(1:nxyz), STAT = ierror)
 do i=1,nx; do j=1,ny; do k=1,nz
    if(cat(i,j,k)%nimp_cell.ne.0)then
@@ -5037,8 +5037,8 @@ do icl=1,ncl
   ijk=ncellt(icl)
   k=(ijk-1)/nxy+1
   j=(ijk-1-(k-1)*nxy)/nx+1
-  i= ijk-(k-1)*nxy-(j-1)*nx  
-  ncell1(n)=ijk  
+  i= ijk-(k-1)*nxy-(j-1)*nx
+  ncell1(n)=ijk
   if(opc(8).eq.1)ncell2(n)=cat(i,j,k)%nimp_cell
   do iloop=1,inspec
     if(opc(8).eq.2)cell2(n,iloop)=cat(i,j,k)%cimmass(iloop)/dble(vol)
@@ -5098,7 +5098,7 @@ end
 ! plotd
 !---------------------------------------------------------------------
 subroutine plotd(cat,iunit)
-! breakthrough for particles removed from internal cells 
+! breakthrough for particles removed from internal cells
 use global
 type (cell)::     cat(nx,ny,nz)
 nout=0
@@ -5131,9 +5131,9 @@ use global
 type (particle):: pat(maxnp)
 !
 write(iunit) np,sngl(curtime)
-do ip=1,np	
+do ip=1,np
   write(iunit)&
-  pat(ip)%pnumber,&  
+  pat(ip)%pnumber,&
 !  pat(ip)%birth_place(1),pat(ip)%birth_place(2),pat(ip)%birth_place(3),&
   pat(ip)%xyz(1),pat(ip)%xyz(2),pat(ip)%xyz(3),&
   sngl(curtime)-pat(ip)%birth_day,sngl(pat(ip)%pmass)
@@ -5142,9 +5142,9 @@ return
 ! skip formatted output
 
 write(iunit,*) np,sngl(curtime)
-do ip=1,np	
+do ip=1,np
   write(iunit,'(1x,i15,1x,4(E15.8,1x),50D15.8)')&
-  pat(ip)%pnumber,&  
+  pat(ip)%pnumber,&
 !  pat(ip)%birth_place(1),pat(ip)%birth_place(2),pat(ip)%birth_place(3),&
   pat(ip)%xyz(1),pat(ip)%xyz(2),pat(ip)%xyz(3),&
   curtime-pat(ip)%birth_day,pat(ip)%pmass
@@ -5172,8 +5172,8 @@ data itime/0/
 save itime
 !
 if(itime.eq.0)then
-  write(iunit1,1000)"TIME,MTOTAL,MSAMPLE",(",LOCATION ",isam,isam=1,nsam)  
-  write(iunit2,1000)"TIME,MTOTAL,MSAMPLE",(",LOCATION ",isam,isam=1,nsam)  
+  write(iunit1,1000)"TIME,MTOTAL,MSAMPLE",(",LOCATION ",isam,isam=1,nsam)
+  write(iunit2,1000)"TIME,MTOTAL,MSAMPLE",(",LOCATION ",isam,isam=1,nsam)
   do isam=1,nsam
     sam(isam)%conc=0.0
     sam(isam)%mass=0.0
@@ -5187,7 +5187,7 @@ do isam=1,nsam
   sam(isam)%conc=0.0
   sam(isam)%mass=0.0
   msample(isam,:)=0.0
-  if(sam(isam)%itype.eq.1)then 
+  if(sam(isam)%itype.eq.1)then
     do ip=1,np
       dxy=sqrt((pat(ip)%xyz(1)-sam(isam)%xyz(1))**2+(pat(ip)%xyz(2)-sam(isam)%xyz(2))**2)
       zdiff=abs(pat(ip)%xyz(3)-(sam(isam)%xyz(3)+sam(isam)%xyz(4))/2.0)
@@ -5208,7 +5208,7 @@ do isam=1,nsam
         enddo
 	  endif
     enddo
-  elseif(sam(isam)%itype.eq.2)then 
+  elseif(sam(isam)%itype.eq.2)then
     i=abs(sam(isam)%ijk(1))
     cmax=0.0
     mtotal=0.0
@@ -5237,7 +5237,7 @@ do isam=1,nsam
 	      msample(isam,iloop)=msample(isam,iloop)+cat(i,j,k)%cmass(iloop)
      enddo
 	      msamplet2=msamplet2+cat(i,j,k)%cmass
-        else 
+        else
           vmag=sqrt(((vel3(1,i-1,j,k)+vel3(1,i,j,k))/2.0)**2+&
                     ((vel3(2,i,j-1,k)+vel3(2,i,j,k))/2.0)**2+&
                     ((vel3(3,i,j,k-1)+vel3(3,i,j,k))/2.0)**2)
@@ -5247,20 +5247,20 @@ do isam=1,nsam
 	        msample(isam,iloop)=msample(isam,iloop)+cat(i,j,k)%cmass(iloop)
      enddo
 !	      msample(isam)=msample(isam)+cat(i,j,k)%cmass
-	      msamplet2=msamplet2+cat(i,j,k)%cmass          
+	      msamplet2=msamplet2+cat(i,j,k)%cmass
         endif
       endif
     enddo;enddo
 	if(sam(isam)%ijk(1).gt.0)then
-      sam(isam)%conc=cmax    
+      sam(isam)%conc=cmax
     else
       if(vmagtotal.ne.0)then
-        sam(isam)%conc=cmax/vmagtotal    
+        sam(isam)%conc=cmax/vmagtotal
       else
-        sam(isam)%conc=0.0    
+        sam(isam)%conc=0.0
       endif
     endif
-  elseif(sam(isam)%itype.eq.3)then 
+  elseif(sam(isam)%itype.eq.3)then
     j=abs(sam(isam)%ijk(2))
     cmax=0.0
     mtotal=0.0
@@ -5290,7 +5290,7 @@ do isam=1,nsam
      enddo
 !	      msample(isam)=msample(isam)+cat(i,j,k)%cmass
 	      msamplet2=msamplet2+cat(i,j,k)%cmass
-        else 
+        else
           vmag=sqrt(((vel3(1,i-1,j,k)+vel3(1,i,j,k))/2.0)**2+&
                     ((vel3(2,i,j-1,k)+vel3(2,i,j,k))/2.0)**2+&
                     ((vel3(3,i,j,k-1)+vel3(3,i,j,k))/2.0)**2)
@@ -5300,20 +5300,20 @@ do isam=1,nsam
 	        msample(isam,iloop)=msample(isam,iloop)+cat(i,j,k)%cmass(iloop)
      enddo
 !	      msample(isam)=msample(isam)+cat(i,j,k)%cmass
-	      msamplet2=msamplet2+cat(i,j,k)%cmass          
+	      msamplet2=msamplet2+cat(i,j,k)%cmass
         endif
       endif
     enddo;enddo
 	if(sam(isam)%ijk(2).gt.0)then
-      sam(isam)%conc=cmax    
+      sam(isam)%conc=cmax
     else
       if(vmagtotal.ne.0)then
-        sam(isam)%conc=cmax/vmagtotal    
+        sam(isam)%conc=cmax/vmagtotal
       else
-        sam(isam)%conc=0.0    
+        sam(isam)%conc=0.0
       endif
     endif
-  elseif(sam(isam)%itype.eq.4)then 
+  elseif(sam(isam)%itype.eq.4)then
     k=abs(sam(isam)%ijk(3))
     cmax=0.0
     mtotal=0.0
@@ -5342,7 +5342,7 @@ do isam=1,nsam
      enddo
 !	      msample(isam)=msample(isam)+cat(i,j,k)%cmass
 	      msamplet2=msamplet2+cat(i,j,k)%cmass
-        else 
+        else
           vmag=sqrt(((vel3(1,i-1,j,k)+vel3(1,i,j,k))/2.0)**2+&
                     ((vel3(2,i,j-1,k)+vel3(2,i,j,k))/2.0)**2+&
                     ((vel3(3,i,j,k-1)+vel3(3,i,j,k))/2.0)**2)
@@ -5352,20 +5352,20 @@ do isam=1,nsam
       	      msample(isam,iloop)=msample(isam,iloop)+cat(i,j,k)%cmass(iloop)
      enddo
 !	      msample(isam)=msample(isam)+cat(i,j,k)%cmass
-	      msamplet2=msamplet2+cat(i,j,k)%cmass          
+	      msamplet2=msamplet2+cat(i,j,k)%cmass
         endif
       endif
     enddo;enddo
 	if(sam(isam)%ijk(3).gt.0)then
-      sam(isam)%conc=cmax    
+      sam(isam)%conc=cmax
     else
       if(vmagtotal.ne.0)then
-        sam(isam)%conc=cmax/vmagtotal    
+        sam(isam)%conc=cmax/vmagtotal
       else
-        sam(isam)%conc=0.0    
+        sam(isam)%conc=0.0
       endif
     endif
-  elseif(sam(isam)%itype.eq.5)then 
+  elseif(sam(isam)%itype.eq.5)then
     do ip=1,np
       kx=ifix(pat(ip)%xyz(1)/dx); ky=ifix(pat(ip)%xyz(2)/dy); kz=ifix(pat(ip)%xyz(3)/dz)
       i=kx+1; j=ky+1; k=kz+1
@@ -5393,7 +5393,7 @@ do isam=1,nsam
         endif
 	  endif
     enddo
-  elseif(sam(isam)%itype.eq.6)then 
+  elseif(sam(isam)%itype.eq.6)then
     i=sam(isam)%ijk(1)
     cmax=0.0
     mtotal=0.0
@@ -5426,8 +5426,8 @@ do isam=1,nsam
 	    msamplet2=msamplet2+cat(i,j,k)%cmass
       endif
     enddo;enddo;enddo
-	sam(isam)%conc=cmax    
-  elseif(sam(isam)%itype.eq.7)then 
+	sam(isam)%conc=cmax
+  elseif(sam(isam)%itype.eq.7)then
     j=sam(isam)%ijk(2)
     cmax=0.0
     mtotal=0.0
@@ -5460,8 +5460,8 @@ do isam=1,nsam
 	    msamplet2=msamplet2+cat(i,j,k)%cmass
       endif
     enddo;enddo;enddo
-	sam(isam)%conc=cmax    
-  elseif(sam(isam)%itype.eq.8)then 
+	sam(isam)%conc=cmax
+  elseif(sam(isam)%itype.eq.8)then
     k=sam(isam)%ijk(3)
     cmax=0.0
     mtotal=0.0
@@ -5494,7 +5494,7 @@ do isam=1,nsam
 	    msamplet2=msamplet2+cat(i,j,k)%cmass
       endif
     enddo;enddo;enddo
-	sam(isam)%conc=cmax    
+	sam(isam)%conc=cmax
   endif
 enddo
 write(iunit1,'(g15.10,1000('','',g15.10))')curtime,mass,msamplet1,(sam(isam)%conc,isam=1,nsam)
@@ -5506,7 +5506,7 @@ end
 ! plotm (after SLIM written by AFB Tompson, LLNL)
 !---------------------------------------------------------------------
 subroutine plotm(pat,iunit,fname,cat)
-! 
+!
 use global
 type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
@@ -5514,7 +5514,7 @@ character (len=80) fname,fname2
 double precision xmean,ymean,zmean,xd,yd,zd,pmass,totmas
 double precision sigxx,sigxy,sigxz,sigyy,sigyz,sigzz,th4d
 data iflag,iflag2/1,1/
-! 
+!
 totmas=0.
 xmean=0.; ymean=0.; zmean=0.
 sigxx=0.; sigxy=0.; sigxz=0.; sigyy=0.; sigyz=0.; sigzz=0.
@@ -5534,11 +5534,11 @@ if(iflag.eq.1)then
   write(iunit,*)' covariance yz'
   write(iunit,*)' covariance zz'
 endif
-! 
+!
 if(np.gt.0)then
-  rmaxx=0.0; rmaxy=0.0; rmaxz=0.0     
-  rminx=large; rminy=large; rminz=large  
-  do iloop=1,nspec   
+  rmaxx=0.0; rmaxy=0.0; rmaxz=0.0
+  rminx=large; rminy=large; rminz=large
+  do iloop=1,nspec
 
     do ip=1,np
       xd=pat(ip)%xyz(1); yd=pat(ip)%xyz(2); zd=pat(ip)%xyz(3)
@@ -5557,7 +5557,7 @@ if(np.gt.0)then
       sigzz=sigzz+zd*zd*pmass
     enddo
     xmean=xmean/totmas; ymean=ymean/totmas; zmean=zmean/totmas
-    sigxx=mx*(sigxx/totmas-xmean*xmean) 
+    sigxx=mx*(sigxx/totmas-xmean*xmean)
     sigxy=mx*my*(sigxy/totmas-xmean*ymean)
     sigxz=mx*mz*(sigxz/totmas-xmean*zmean)
     sigyy=my*(sigyy/totmas-ymean*ymean)
@@ -5567,7 +5567,7 @@ if(np.gt.0)then
   enddo
 endif
 
-20 format(1x,f15.6,1x,i3,1x,16(f15.6,1x)) 
+20 format(1x,f15.6,1x,i3,1x,16(f15.6,1x))
 return
 end
 
@@ -5664,7 +5664,7 @@ use global
 implicit none
 integer:: ll,mm,nn
 real:: z1,z2,z3
-double precision:: zz1,zz2,zz3,tsq3 
+double precision:: zz1,zz2,zz3,tsq3
 data mm/1048576/,ll/1027/
 data tsq3/3.46410161513775d+0/
 nn=ll*iseed1
@@ -5708,7 +5708,7 @@ end
 !-------------------------------------------------------------------
 real function randu01()
 ! reliable and fast uniform random number generator (between 0 and 1)
-! (after SLIM written by AFB Tompson, LLNL)      
+! (after SLIM written by AFB Tompson, LLNL)
 use global
 implicit none
 integer ll,mm,nn
@@ -5724,12 +5724,12 @@ end
 ! random2
 !-------------------------------------------------------------------
 subroutine random2(z1,z2,z3)
-! often overly robust, but slow, uniform random number generator 
+! often overly robust, but slow, uniform random number generator
 ! with mean zero and varance 1
 use global
 implicit none
 real:: ran3,z1,z2,z3
-double precision zz1,zz2,zz3,tsq3 
+double precision zz1,zz2,zz3,tsq3
 data tsq3/3.46410161513775d+0/
 !      zz1=dble(ran3(iseed1))
 !      zz2=dble(ran3(iseed1))
@@ -5831,16 +5831,16 @@ if(np.le.maxnp)then
   pat(np)%pmass=pmass
   pat(np)%pnumber=pnumber
   pat(np)%ijk(1)=i; pat(np)%ijk(2)=j; pat(np)%ijk(3)=k
-  pat(np)%active=.true.                  
-  pat(np)%death_day=0.0  
+  pat(np)%active=.true.
+  pat(np)%death_day=0.0
   pat(np)%ds=ds
 !
   cat(i,j,k)%np_cell=cat(i,j,k)%np_cell+1       ! number of particles in cell
 !
   cat(i,j,k)%cmass=cat(i,j,k)%cmass+pmass   ! mass in cell
 ! log the bithplace in outp and tag with a NEGATIVE ip
-  write(ioutp)pat(np)%pnumber  
-  write(ioutp)x,y,z  
+  write(ioutp)pat(np)%pnumber
+  write(ioutp)x,y,z
 else
   write(iout,*)' maxnp exceded'
   write(*,*)' maxnp exceded'
@@ -5872,18 +5872,18 @@ if(nimp.le.maxnp)then
   imp(nimp)%pmass=pmass
   imp(nimp)%pnumber=impnumber
   imp(nimp)%ijk(1)=i
-  imp(nimp)%ijk(2)=j 
+  imp(nimp)%ijk(2)=j
   imp(nimp)%ijk(3)=k
-  imp(nimp)%active=.true.                  
-  imp(nimp)%death_day=0.0  
+  imp(nimp)%active=.true.
+  imp(nimp)%death_day=0.0
   imp(nimp)%ds=ds
 !
   cat(i,j,k)%nimp_cell=cat(i,j,k)%nimp_cell+1       ! number of particles in cell
 !
   cat(i,j,k)%cimmass=cat(i,j,k)%cimmass+pmass   ! mass in cell
 ! log the bithplace in outp and tag with a NEGATIVE ip
-  write(ioutp)imp(nimp)%pnumber  
-  write(ioutp)x,y,z  
+  write(ioutp)imp(nimp)%pnumber
+  write(ioutp)x,y,z
 else
   write(iout,*)' maxnp exceded'
   write(*,*)' maxnp exceded'
@@ -5891,7 +5891,7 @@ else
 endif
 return
 end
-        
+
 !------------------------------------------------------------
 ! updtp
 !------------------------------------------------------------
@@ -5917,7 +5917,7 @@ end
 ! conserve
 !------------------------------------------------------------
 subroutine conserve(pat,cat)
-!.....check for cell-based particle and mass conservation 
+!.....check for cell-based particle and mass conservation
 use global
 type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
@@ -5982,9 +5982,9 @@ do ip=np,istart,-1
     cat(i,j,k)%np_remove=cat(i,j,k)%np_remove+1
     cat(i,j,k)%mass_remove=cat(i,j,k)%mass_remove+pat(ip)%pmass
 !.........log particle removal in output file
-    write(ioutp)pat(ip)%pnumber !,'(1x,i15,1x,8(G15.5,1x),10G15.5,3(1x,i6))')&  
+    write(ioutp)pat(ip)%pnumber !,'(1x,i15,1x,8(G15.5,1x),10G15.5,3(1x,i6))')&
     write(ioutp)& !,'(1x,i15,1x,8(G15.5,1x),G15.5,3(1x,i6))')&
-    pat(ip)%birth_day,pat(ip)%death_day,&  
+    pat(ip)%birth_day,pat(ip)%death_day,&
 !    pat(ip)%birth_place(1),pat(ip)%birth_place(2),pat(ip)%birth_place(3),&
     pat(ip)%xyz(1),pat(ip)%xyz(2),pat(ip)%xyz(3),&
     pat(ip)%pmass,i,j,k
@@ -6009,9 +6009,9 @@ do ip=np,istart,-1
     cat(i,j,k)%mass_remove=cat(i,j,k)%mass_remove+pat(ip)%pmass
     mass=mass-pat(ip)%pmass
 !.........log particle removal in output file
-    write(ioutp)pat(ip)%pnumber !,'(1x,i15,1x,8(G15.5,1x),10G15.5,3(1x,i6))')&  
+    write(ioutp)pat(ip)%pnumber !,'(1x,i15,1x,8(G15.5,1x),10G15.5,3(1x,i6))')&
     write(ioutp) & !,'(1x,i15,1x,8(G15.5,1x),G15.5,3(1x,i6))')&
-    pat(ip)%birth_day,pat(ip)%death_day,&  
+    pat(ip)%birth_day,pat(ip)%death_day,&
 !    pat(ip)%birth_place(1),pat(ip)%birth_place(2),pat(ip)%birth_place(3),&
     pat(ip)%xyz(1),pat(ip)%xyz(2),pat(ip)%xyz(3),&
     pat(ip)%pmass,i,j,k
@@ -6040,9 +6040,9 @@ type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 integer:: idir,ip
 real:: x,y,z,timeleft
-real:: xd,yd,zd 
+real:: xd,yd,zd
 real:: xyz(3),xyzd(3)
-!double precision:: xd,yd,zd 
+!double precision:: xd,yd,zd
 double precision:: pmass(nspec) !,xyz(3),xyzd(3)
 
 !
@@ -6057,7 +6057,7 @@ do idir=1,3
   xyzd(idir)=abs(xyz(idir)-sngl(xyzc(idir)))
 !.is.particle within shell of cells sourounding boundary, or outside of domain?
   if(xyzd(idir).ge.sngl(xyzl2(idir)))then
-!...if it's on the domain, nudge it out 
+!...if it's on the domain, nudge it out
     if(xyz(idir).eq.sngl(xyzmax(idir)))xyz(idir)=xyz(idir)+smallxyz(idir)
     if(xyz(idir).eq.sngl(xyzmin(idir)))xyz(idir)=xyz(idir)-smallxyz(idir)
 !...reflect particles if required
@@ -6071,8 +6071,8 @@ do idir=1,3
     if(xyzd(idir).ge.sngl(xyzl2(idir)))then
 !.....check for out of bounds, update breakthrough counters, and tag partcle for removal
       pat(ip)%active=.false.    ! tag particle for removal
-      pat(ip)%death_day=curtime-timeleft  
-      pmass=pat(ip)%pmass 
+      pat(ip)%death_day=curtime-timeleft
+      pmass=pat(ip)%pmass
       if(xyz(idir).ge.sngl(xyzmax(idir))) then
         netxyzp(idir)=netxyzp(idir)-1
   do iloop=1,nspec
@@ -6083,7 +6083,7 @@ do idir=1,3
  do iloop=1,nspec
         netmassm(idir,iloop)=netmassm(idir,iloop)-pmass(iloop)
  enddo
-      end if 
+      end if
       return
     endif
   endif
@@ -6105,7 +6105,7 @@ type (particle):: pat(maxnp)
 type (cell)::     cat(nx,ny,nz)
 integer:: idir,ip
 real:: x,y,z,timeleft
-double precision:: xd,yd,zd 
+double precision:: xd,yd,zd
 double precision:: pmass(nspec),xyz(3),xyzd(3)
 !
 xyz(1)=dble(x)
@@ -6115,7 +6115,7 @@ do idir=1,3
   xyzd(idir)=dabs(dble(xyz(idir))-xyzc(idir))
 !.is.particle within shell of cells sourounding boundary, or outside of domain?
   if(xyzd(idir).ge.xyzl2(idir))then
-!...if it's on the domain, nudge it out 
+!...if it's on the domain, nudge it out
     if(xyz(idir).eq.xyzmax(idir))xyz(idir)=xyz(idir)+smallxyz(idir)
     if(xyz(idir).eq.xyzmin(idir))xyz(idir)=xyz(idir)-smallxyz(idir)
 !...reflect particles if required
@@ -6127,8 +6127,8 @@ do idir=1,3
     if(xyzd(idir).ge.xyzl2(idir))then
 !.....check for out of bounds, update breakthrough counters, and tag partcle for removal
       pat(ip)%active=.false.    ! tag particle for removal
-      pat(ip)%death_day=curtime-timeleft  
-      pmass=pat(ip)%pmass 
+      pat(ip)%death_day=curtime-timeleft
+      pmass=pat(ip)%pmass
       if(xyz(idir).ge.xyzmax(idir)) then
         netxyzp(idir)=netxyzp(idir)-1
   do iloop=1,nspec
@@ -6141,7 +6141,7 @@ do idir=1,3
         netmassm(idir,iloop)=netmassm(idir,iloop)-pmass(iloop)
  enddo
 !        netmassm(idir)=netmassm(idir)-pmass
-      end if 
+      end if
       return
     endif
   endif
@@ -6175,7 +6175,7 @@ itype=bounds(ibounds)%bc_type
 !.....constant conc. boundaries (updatad only at tnextsrc)
 if((itype.eq.1).and.(curtime.eq.tnextsrc).and.(timeleft.eq.0.))then
   pat(ip)%active=.false.
-  pat(ip)%death_day=curtime-timeleft  
+  pat(ip)%death_day=curtime-timeleft
 !.......removal counters
   bounds(ibounds)%np_remove=bounds(ibounds)%np_remove-1
   bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-pat(ip)%pmass
@@ -6187,7 +6187,7 @@ if((itype.eq.1).and.(curtime.eq.tnextsrc).and.(timeleft.eq.0.))then
 !.absorbing boundary
 elseif(itype.eq.3)then
   pat(ip)%active=.false.
-  pat(ip)%death_day=curtime-timeleft  
+  pat(ip)%death_day=curtime-timeleft
 !.removal counters
   bounds(ibounds)%np_remove=bounds(ibounds)%np_remove-1
   bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-pat(ip)%pmass
@@ -6211,7 +6211,7 @@ elseif(itype.eq.4.or.itype.eq.5)then
   prob=dtmin*q/(dtmin*q+vol*por(cat(i,j,k)%zone)*ret(cat(i,j,k)%zone))
   if(randu01().lt.prob)then
     pat(ip)%active=.false.
-    pat(ip)%death_day=curtime-timeleft  
+    pat(ip)%death_day=curtime-timeleft
 !...removal counters
     bounds(ibounds)%np_remove=bounds(ibounds)%np_remove-1
     bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-pat(ip)%pmass
@@ -6230,9 +6230,9 @@ elseif(itype.eq.7)then
   if(randu01().lt.prob)then
     fluxout=bounds(ibounds)%fluxout
     if(fluxout.ge.0.0)then
-!.....MAW boundary has no flow into aquifer - just remove particle 
+!.....MAW boundary has no flow into aquifer - just remove particle
       pat(ip)%active=.false.
-      pat(ip)%death_day=curtime-timeleft  
+      pat(ip)%death_day=curtime-timeleft
 !.....removal counters
       bounds(ibounds)%np_remove=bounds(ibounds)%np_remove-1
       bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-pat(ip)%pmass
@@ -6250,7 +6250,7 @@ elseif(itype.eq.7)then
 !.....assume mass completely mixed in inflow
       fmassout=min(abs(fluxout),fluxin)/fluxin ! fraction transferred
       fmassin=1.0-fmassout ! fraction absorbed
-!.....account for mass leaving well - this is the mass that leaves the domain 
+!.....account for mass leaving well - this is the mass that leaves the domain
       bounds(ibounds)%mass_remove=bounds(ibounds)%mass_remove-dble(fmassin)*pat(ip)%pmass
   do iloop=1,nspec
      massbc(itype,iloop)=massbc(itype,iloop)-dble(fmassin)*pat(ip)%pmass(iloop)
@@ -6261,7 +6261,7 @@ elseif(itype.eq.7)then
 !.....Find beginning of MAW boundary
       ibou=ibounds
       numbnd=bounds(ibounds)%group
-      do 
+      do
         ibou=ibou-1
         if(ibou.lt.1)exit
         if(bounds(ibou)%group.ne.numbnd)exit
@@ -6271,7 +6271,7 @@ elseif(itype.eq.7)then
       r=randu01()
       prob=0.0
       do ibou=istart_ibou,nbounds
-        if(bounds(ibou)%group.ne.numbnd)exit              
+        if(bounds(ibou)%group.ne.numbnd)exit
         ktop=bounds(ibou)%ktop
         kbot=bounds(ibou)%kbot
         do kk=kbot,ktop
@@ -6286,7 +6286,7 @@ elseif(itype.eq.7)then
         enddo
         if(r.le.prob)exit
       enddo
-      if(ibou.gt.nbounds)ibou=nbounds      
+      if(ibou.gt.nbounds)ibou=nbounds
       if(kk.gt.ktop)kk=ktop
 !.....ibou = boundary number
 !.....kk = layer in new cell
