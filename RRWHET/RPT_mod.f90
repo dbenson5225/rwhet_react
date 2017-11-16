@@ -161,14 +161,28 @@ print *, 'allocated'
 !  Build locs array--mobile particles will be at the beginning of the
 !  array, and immobile will be at the end
 !  This seems super slow - can I vectorize?
+print *, '164'
+!    print *, 'count(pat(alive)%xyz) = ', count(pat(alive)%xyz)
+! print *, 'count(pat(alive)%xyz < 0.0 .or. pat(alive)%xyz > 0.5) = ', count(pat(alive)%xyz < 0.0 .or. pat(alive)%xyz > 0.5)
 
 
    do iloop=1,na
         locs(1:dim,iloop) = real(pat(alive(iloop))%xyz, kdkind)
+        if (pat(alive(iloop))%xyz(1) > 0.5 .or. pat(alive(iloop))%xyz(1) < 0.0) then
+            print *, 'pat outside range'
+            pause
+        endif
    enddo
+
+   print *, 'count(isnan(locs(:, 1 : na))) = ', count(isnan(locs(:, 1 : na)))
+print *, 'count(locs(1, 1 : na) < 0.0 .or. locs(1, 1 : na) > 0.5) = ', count(locs(1, 1 : na) < 0.0 .or. locs(1, 1 : na) > 0.5)
 
    do iloop=na+1,ntot
          locs(1:dim,iloop) = real(imp(iloop-na)%xyz, kdkind)
+         if (imp(iloop-na)%xyz(1) > 0.5 .or. imp(iloop-na)%xyz(1) < 0.0) then
+             print *, 'imp outside range'
+             pause
+         endif
    enddo
 
 print *, '174'
@@ -182,6 +196,9 @@ print *, '174'
         ! build the KD tree and search it
         ! ****NOTE: num_alloc is a global variable that is hard-coded above
 print *, 'pretree'
+print *, 'count(isnan(locs(1, :))) = ', count(isnan(locs(1, :)))
+print *, 'count(locs(1, :) < 0.0), count(locs(1, :) > 0.5) = ', count(locs(1, :) < 0.0), count(locs(1, :) > 0.5)
+! pause
         call maketree(tree, locs, dim, ntot)
         print *, 'posttree'
         call search(ntot, dim, tree, r2, ntot, closeguys, close_dists)

@@ -25,3 +25,8 @@ RRWHET/rw_dolomite/MODFLOW/dolomite_vgrid/
 *.part
 *.pdf
 *~
+ADRE/part_concs.txt
+ADRE/stats.txt
+RPT/error.inp
+RPT/part_concs.txt
+RPT/stats.txt
