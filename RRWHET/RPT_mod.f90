@@ -146,7 +146,7 @@ deallocate (indices,alive)
 !print*,pat%active
 
      allocate(locs(dim,na+ni))
-     allocate(const(ntot),denom(ntot),ds(ntot))
+     allocate(ds(ntot))
      allocate(Dloc(na))
 
 print *, 'allocated'
@@ -161,27 +161,22 @@ print *, 'allocated'
 !  Build locs array--mobile particles will be at the beginning of the
 !  array, and immobile will be at the end
 !  This seems super slow - can I vectorize?
-print *, '164'
-!    print *, 'count(pat(alive)%xyz) = ', count(pat(alive)%xyz)
-! print *, 'count(pat(alive)%xyz < 0.0 .or. pat(alive)%xyz > 0.5) = ', count(pat(alive)%xyz < 0.0 .or. pat(alive)%xyz > 0.5)
-
 
    do iloop=1,na
         locs(1:dim,iloop) = real(pat(alive(iloop))%xyz, kdkind)
         if (pat(alive(iloop))%xyz(1) > 0.5 .or. pat(alive(iloop))%xyz(1) < 0.0) then
             print *, 'pat outside range'
-            pause
         endif
    enddo
 
-   print *, 'count(isnan(locs(:, 1 : na))) = ', count(isnan(locs(:, 1 : na)))
+print *, 'count(isnan(locs(:, 1 : na))) = ', count(isnan(locs(:, 1 : na)))
 print *, 'count(locs(1, 1 : na) < 0.0 .or. locs(1, 1 : na) > 0.5) = ', count(locs(1, 1 : na) < 0.0 .or. locs(1, 1 : na) > 0.5)
 
    do iloop=na+1,ntot
+print*,iloop,imp(iloop-na)%xyz
          locs(1:dim,iloop) = real(imp(iloop-na)%xyz, kdkind)
          if (imp(iloop-na)%xyz(1) > 0.5 .or. imp(iloop-na)%xyz(1) < 0.0) then
              print *, 'imp outside range'
-             pause
          endif
    enddo
 
@@ -198,40 +193,22 @@ print *, '174'
 print *, 'pretree'
 print *, 'count(isnan(locs(1, :))) = ', count(isnan(locs(1, :)))
 print *, 'count(locs(1, :) < 0.0), count(locs(1, :) > 0.5) = ', count(locs(1, :) < 0.0), count(locs(1, :) > 0.5)
-! pause
+
         call maketree(tree, locs, dim, ntot)
-        print *, 'posttree'
+print *, 'posttree'
         call search(ntot, dim, tree, r2, ntot, closeguys, close_dists)
-        print *, 'postsearch'
+print *, 'postsearch'
 
         ! NOTE: this search returns the SQUARED distance between two points
             ! also, the point itself is included in the closeguys list
 
         call kdtree2_destroy(tree)
-        ! print *, 'shape(denom) = ', shape(denom)
 
-        ! calculate ds, the 'support volume' of a particle
-        ! ****should immobile particles be a part of this calculation?
-!        ds = omega / dble(ntot)
-            ! ****NOTE: this is average inter-particle spacing of alive particles
-        ! denom = -4.0d0 * Dloc * dt    ! This should be a vector na big
-            ! denom is part of the normalizing constant as well as the
-            ! the denominator of the exponential argument
-        ! print *, 'shape(ds), shape(denom), shape(const) = ', shape(ds), shape(denom), shape(const)
-        ! const = ds / sqrt(pi * (-denom))
-            ! normalizing constant for v(s), multiplied by ds
-            ! this is for mobile/immobile interaction, since immobile aren't
-            ! moving via diffusion (note there is only one D above, for the
-            ! mobile particle, instead of two)
-            ! NOTE: indices of denom and const correspond to indices of alive
-            ! array--not the index in the mp array
-            ! i.e., particle x which is alive(i) has denom(i) and const(i)
-
-        ! loop over mobile particles
+         ! loop over mobile particles
     allocate(dmass(nspec))
-    print *, '213'
+print *, '213'
 
-        do iloop = 1,na ! this is the 'A' particle loop
+        do iloop = 1,na ! this is the 'A' MOBILE particle loop
             ! make aindex equal to index in mobile pat array
             aindex = alive(iloop)
             ! if reducing mass of A particle after B loop set dmA to zero
@@ -278,10 +255,9 @@ print *, 'count(locs(1, :) < 0.0), count(locs(1, :) > 0.5) = ', count(locs(1, :)
          enddo
 deallocate(dmass)
 deallocate(locs)
-deallocate(const,denom,ds)
-
-     deallocate(indices,alive)
-     deallocate(Dloc)
+deallocate(ds)
+deallocate(indices,alive)
+deallocate(Dloc)
 
 
 !   Loop over immobile particles
@@ -335,7 +311,7 @@ deallocate(const,denom,ds)
 !endif   ! Mass transfer with immobile particles?
 
 
-print*,'here m1',na,alive
+
 
     end subroutine mix_particles
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -350,16 +326,16 @@ subroutine abc_react(imp,pat,cat,closeguys,close_dists,dt)
        type(particle),  intent(inout) :: pat(:) ! immobile particle array
        type(imparticle),intent(inout) :: imp(:) ! mobile particle array
        type(cell),      intent(inout) :: cat(nx,ny,nz)   ! cell info (incl. diff)
-       type(index_array), intent(inout)  :: closeguys(:)
+       type(index_array),intent(inout):: closeguys(:)
             ! this holds the indices of nearby particles
-       type(dist_array), intent(inout)   :: close_dists(:)
+       type(dist_array), intent(inout):: close_dists(:) 
             ! this holds the distances to the corresponding nearby particle
 
        double precision, intent(in)   :: dt
-!       integer, intent(in)            ::
-       double precision, allocatable  :: dmA(:), dmB(:),ds(:),pmass(:),v_s(:),Dloc(:)
+       double precision, allocatable  :: dmA(:), dmB(:),ds(:),pmass(:),v_s(:),Dloc(:),indydists(:)
        double precision               :: dm, dmAtemp, dmBtemp,kr,kf,stoA,stoB,stoC,totwgt,&
-                                         denom1,x,y,z,weight
+                                         denom1,weight
+       real                           :: x,y,z
        integer                        :: iloop,jloop,numjs,ntot,aindex,bindex,i,j,k,na,ni
        integer, allocatable           :: indys(:), alive(:), indices(:)
        double precision               :: conc(nspec),iconc(inspec),curtime
@@ -388,7 +364,7 @@ kr=0.0001
      Dloc(1:na)=pat(alive)%dmix
 
      allocate (v_s(ntot),dmA(ni),dmB(ni))  ! Maximum possible size
-     allocate (indys(ntot))  ! Maximum possible size
+     allocate (indys(ntot),indydists(ntot))  ! Maximum possible size
 v_s=0.d0
 pmass=0.d0
 
@@ -399,7 +375,7 @@ do iloop=1,na   !  These are the mobiles
      conc=(pat(aindex)%pmass)/pat(aindex)%ds
 
 print*,'here r2',aindex,conc
-     dm = kf*dt*(conc(1)/ds(iloop))**stoA*(conc(2)/ds(iloop))**stoB
+     dm = kf*dt*ds(iloop)*(conc(1))**stoA*(conc(2))**stoB
 
      dmAtemp=min(stoA*dm,pat(aindex)%pmass(1))
      dmBtemp=min(stoB*dm,pat(aindex)%pmass(2))
@@ -415,17 +391,18 @@ print*,'here r2',aindex,conc
 
      numjs=count(closeguys(iloop)%indices>na)
      if(numjs.lt.1) then
-!print*,iloop
 ! make an imp here
          i=pat(aindex)%ijk(1); j=pat(aindex)%ijk(2); k=pat(aindex)%ijk(3)
-         x=pat(aindex)%xyz(1); y=pat(aindex)%xyz(2); z=pat(aindex)%xyz(1)
+         x=pat(aindex)%xyz(1); y=pat(aindex)%xyz(2); z=pat(aindex)%xyz(3)
 ! DAB  Not sure how big ds should be here...
-         call addimp(real(curtime),x,y,z,i,j,k,pmass,imp,cat,dx*dy*dz/(nimp+1))
+         call addimp(real(curtime),x,y,z,i,j,k,pmass,imp,cat,dble(dx*dy*dz)/dble(nimp+1))
      else
 ! Place solids on nearby imp particles weighted by prob. of collision
         indys(1:numjs)=pack(closeguys(iloop)%indices,closeguys(iloop)%indices>na)
+        indydists(1:numjs)=pack(close_dists(iloop)%dists,closeguys(iloop)%indices>na)
         v_s=0.d0
-print*,'here r4',numjs,indys(1:numjs)
+
+print*,'here r4',numjs,indys(1:numjs),indydists(1:numjs)
 
 print*,'here 4',closeguys(iloop)%indices,indys(1:numjs)
 
@@ -437,14 +414,14 @@ print*,'here 4',closeguys(iloop)%indices,indys(1:numjs)
                 ! NOTE: distance is not squared since the search already
                 ! returned the squared value
 
-                v_s(jloop) = exp(close_dists(iloop)%dists(indys(jloop))/denom1)
+                v_s(jloop) = exp(indydists(jloop)/denom1)
 
         enddo
         totwgt=sum(v_s(1:numjs))
 
         do jloop=1, numjs
                 weight=v_s(jloop)/totwgt
-                bindex = closeguys(iloop)%indices(indys(jloop)) - na
+                bindex = indys(jloop) - na   ! This should be the correct imp particle
 
 !  Update both particle and cell masses
 ! DAB Seems slow to continuously update cat properties!  Also should put in bulk density?
@@ -463,7 +440,8 @@ do iloop=1,ni    !  This will stay parallel
 !  Should enforce that kr*dt < 0.1, but fuck it
   if (kr*dt>0.1) print*,' Timesteps probably too big.  kr*dt = ',kr*dt
 
-     dm = min(imp(iloop)%pmass(1),kr*dt*imp(iloop)%pmass(1))
+!     dm = min(imp(iloop)%pmass(1),kr*dt*imp(iloop)%pmass(1))
+     dm = min(imp(iloop)%pmass(1),kr*dt)
 
      dmA(iloop)=(stoA/stoC)*dm        ! Store for later delivery to mobile particles
      dmB(iloop)=(stoB/stoC)*dm
@@ -483,15 +461,19 @@ do iloop=1,ni     !  Immobile particles loop
 
     numjs=count(closeguys(na+iloop)%indices<=na)
     indys(1:numjs)=pack(closeguys(na+iloop)%indices,closeguys(na+iloop)%indices<=na)
+    indydists(1:numjs)=pack(close_dists(na+iloop)%dists,closeguys(na+iloop)%indices<=na)
+
+print*,'here r5',indys(1:numjs),indydists(1:numjs)
+
 !  make the pmass vector that must be placed into mobiles
     pmass(1)=dmA(iloop); pmass(2)=dmB(iloop)    ! etc. etc. if needed
 
     if(numjs.lt.1) then
 ! make a new pat here
          i=imp(iloop)%ijk(1); j=imp(iloop)%ijk(2); k=imp(iloop)%ijk(3)
-         x=imp(iloop)%xyz(1); y=imp(iloop)%xyz(2); z=imp(iloop)%xyz(1)
+         x=imp(iloop)%xyz(1); y=imp(iloop)%xyz(2); z=imp(iloop)%xyz(3)
 ! DAB  Not sure how big to make ds ...
-         call addp(real(curtime),x,y,z,i,j,k,pmass,pat,cat,dx*dy*dz/(np+1))
+         call addp(real(curtime),x,y,z,i,j,k,pmass,pat,cat,dble(dx*dy*dz)/dble(np+1))
 
     else
 ! Place dissolved solids on nearby pat particles weighted by prob. of collision
@@ -505,14 +487,14 @@ do iloop=1,ni     !  Immobile particles loop
                 ! NOTE: distance is not squared since the search already
                 ! returned the squared value
 
-                v_s(jloop) = exp(close_dists(na+iloop)%dists(indys(jloop))/denom1)
+                v_s(jloop) = exp(indydists(jloop)/denom1)
 
         enddo
         totwgt=sum(v_s(1:numjs))
 
         do jloop=1, numjs
                 weight=v_s(jloop)/totwgt
-                bindex = closeguys(na+iloop)%indices(indys(jloop))
+                bindex = alive(indys(jloop))
                 pat(bindex)%pmass=pat(bindex)%pmass+weight*stoC*pmass
 !  DAB Do I need to do this???
         i=pat(bindex)%ijk(1); j=pat(bindex)%ijk(2); k=pat(bindex)%ijk(3)
@@ -524,7 +506,7 @@ do iloop=1,ni     !  Immobile particles loop
 
 enddo   !  loop through the immobile for dissolution
 
-deallocate (pmass,v_s,dmA,dmB,indys)
+deallocate (pmass,v_s,dmA,dmB,indys,indydists)
 ! deallocate(closeguys,close_dists)
 end subroutine abc_react
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -550,15 +532,16 @@ end subroutine abc_react
             ! to preallocate results array within KD tree module
         type(kdtree2), pointer,         intent(in   ) :: tree ! the KD tree
         real(kdkind),                   intent(in   ) :: r2 ! squared search radius
-        type(index_array),  intent(  out) :: closeguys(:)
+        type(index_array),              intent(inout) :: closeguys(:)
             ! this holds the indices of nearby particles
-        type(dist_array),   intent(  out) :: close_dists(:)
+        type(dist_array),               intent(inout) :: close_dists(:)
             ! this holds the distances to the corresponding nearby particle
         integer                                       :: i, nf
             ! loop iterator and number of particles found by search
         type(kdtree2_result), allocatable             :: results(:)
             ! results array from KD tree module
 
+!allocate(closeguys(n),close_dists(n))
 !         allocate(results(n))
          allocate (results(n))
 

@@ -1916,8 +1916,6 @@ do; if(.not.(curtime.lt.tmax))exit
 
     call D_partition (pat,cat,dtran,ddiff)
 
-print*,' '
-print*,'here 1',count(pat%active),count(imp%active)
 
   if(ibug.ge.1)then;string(1)=' CALL MOVEP!';call debug(ibugout,string,nline);endif
 
@@ -1940,7 +1938,7 @@ print*,'here 1',count(pat%active),count(imp%active)
 
 ! DAB put in mixing subroutine call here
 
-    call D_partition (pat,cat,dtran,ddiff)
+    call D_partition (pat,cat,dtran,ddiff)   !  Particles moved
 
     na = count(pat%active)
     ni = count(imp%active)
@@ -1948,16 +1946,13 @@ print*,'here 1',count(pat%active),count(imp%active)
 
     allocate (closeguys(na),close_dists(na))
 
-print*,dt,'here 1951'
-print *, 'test'
-print *, 'dt.gt.0.0 = ', dt.gt.0.0
+print*,' '
+print*,'here 1',count(pat%active),count(imp%active)
 
-    if(dt.gt.0.0) print *, 'dtgt'
+
     if(dt.gt.0.0) call mix_particles(imp,pat,cat,closeguys,close_dists,dt)
 
-print*,dt,'here 5'
-
-    if(dt.gt.0.0)    call abc_react(imp,pat,cat,closeguys,close_dists,dt)
+    if(dt.gt.0.0) call abc_react(imp,pat,cat,closeguys,close_dists,dt)
 
    deallocate(closeguys,close_dists)
 print*,'here 6'
@@ -2463,7 +2458,7 @@ do ip=1,npart
     z=float(k-1)*dz+smallxyz(3)
   endif
 ! DAB need to figure out ds for sure!!!! For now = sx*sy*dz/npart
- ds=sx*sy*dz/npart
+ ds=dble(sx*sy*dz)/dble(npart)
   call addp(time,x,y,z,kx+1,ky+1,k,pmass,pat,cat,ds)
 enddo
 return
@@ -5846,6 +5841,9 @@ if(np.le.maxnp)then
   pat(np)%active=.true.
   pat(np)%death_day=0.0
   pat(np)%ds=ds
+ 
+  pat(np)%dmix=0.d0   !! This will get changed in subroutine DPartition
+
 !
   cat(i,j,k)%np_cell=cat(i,j,k)%np_cell+1       ! number of particles in cell
 !
@@ -5858,6 +5856,8 @@ else
   write(*,*)' maxnp exceded'
   stop
 endif
+
+print*, 'here addp1',pat(np)
 return
 end
 !------------------------------------------------------------
@@ -5901,6 +5901,7 @@ else
   write(*,*)' maxnp exceded'
   stop
 endif
+print*,'here addimp1',imp(nimp)
 return
 end
 

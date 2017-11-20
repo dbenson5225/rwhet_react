@@ -18,17 +18,17 @@ WARN = -Wall > compile.log 2>&1
 # gets concatenated with FLAGS
 # FLAGS += $(LIB)
 
-RRWHET_files = blah.f90 kdtree2.f90 RPT_mod.f90
+rrwhet_files = blah.f90 kdtree2.f90 rpt_mod.f90
 
-all: RRWHET_exe
+all: rrwhet_exe
 
-RRWHET_exe: $(RRWHET_files)
+rrwhet_exe: $(rrwhet_files)
 	$(FC90) kdtree2.f90 -c $(FLAGS)
 	-$(FC90) blah.f90 -c $(FLAGS) 2> /dev/null
 	# NOTE: the above generates an error since it needs RPT_mod, but the error
 		# is piped to /dev/null--change this to see warnings/errors
-	$(FC90) RPT_mod.f90 -c $(FLAGS)
-	$(FC90) $(RRWHET_files) -o $@ $(FLAGS)
+	$(FC90) rpt_mod.f90 -c $(FLAGS)
+	$(FC90) $(rrwhet_files) -o $@ $(FLAGS)
 
 clean:
 	rm -r *_exe *.mod *.o *.out *.err dolomite_chem.in myrun* *.dSYM *.inp compile.log
