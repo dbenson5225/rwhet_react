@@ -11,7 +11,7 @@ MPI90 = mpif90
 # FLAGS = -O3
 # for easier debugging
 # NOTE: -g only works for gfortran... i think
-FLAGS = -g -fcheck=all -fbacktrace
+FLAGS = -g -fcheck=all -Wall -fbacktrace
 WARN = -Wall > compile.log 2>&1
 
 # make on mio couldn't take multiple variables for compiling below, so LIB
